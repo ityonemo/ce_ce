@@ -1,4 +1,4 @@
 %{
   "elixir_make": {:hex, :elixir_make, "0.9.0", "6484b3cd8c0cee58f09f05ecaf1a140a8c97670671a6a0e7ab4dc326c3109726", [:mix], [], "hexpm", "db23d4fd8b757462ad02f8aa73431a426fe6671c80b200d9710caf3d1dd0ffdb"},
-  "proton_stream": {:hex, :proton_stream, "1.8.1", "251fcd1845082ef0d4f9b7a5986b02e0e481576b1f17091db8215ed9009814be", [:make, :mix], [{:elixir_make, "~> 0.6", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm", "81db8bd38060220348e698b3321b57415d20f980e52ae9581fe5852ab928e199"},
+  "proton_stream": {:hex, :proton_stream, "1.8.2", "c5bfdfa5ae59c4367a8c5d59d67c33bfb460e2480ed743218b0d05585fcddeb8", [:make, :mix], [{:elixir_make, "~> 0.6", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm", "45d47a06e7ed80eeff436e2f983dc291cf3ca92f300629f322caa477ce12266e"},
 }
