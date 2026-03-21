@@ -10,6 +10,8 @@ defmodule CeCe.Message do
   - `payload` - Type-specific payload struct
   """
 
+  @behaviour Access
+
   @type message_type :: :system | :assistant | :user
 
   @type t :: %__MODULE__{
@@ -21,6 +23,15 @@ defmodule CeCe.Message do
         }
 
   defstruct [:type, :session_id, :uuid, :parent_tool_use_id, :payload]
+
+  @impl Access
+  def fetch(struct, key), do: Map.fetch(struct, key)
+
+  @impl Access
+  def get_and_update(_, _, _), do: raise("CeCe.Message is read-only")
+
+  @impl Access
+  def pop(_, _), do: raise("CeCe.Message is read-only")
 
   @doc """
   Parse a JSON map into a Message struct with the appropriate payload.

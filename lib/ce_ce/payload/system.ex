@@ -5,6 +5,8 @@ defmodule CeCe.Payload.System do
   Currently only handles `subtype: "init"`.
   """
 
+  @behaviour Access
+
   @type mcp_server :: %{name: String.t(), status: String.t()}
 
   @type t :: %__MODULE__{
@@ -38,6 +40,15 @@ defmodule CeCe.Payload.System do
     :skills,
     :plugins
   ]
+
+  @impl Access
+  def fetch(struct, key), do: Map.fetch(struct, key)
+
+  @impl Access
+  def get_and_update(_, _, _), do: raise("CeCe.Payload.System is read-only")
+
+  @impl Access
+  def pop(_, _), do: raise("CeCe.Payload.System is read-only")
 
   def parse(json) do
     %__MODULE__{

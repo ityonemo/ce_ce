@@ -3,6 +3,8 @@ defmodule CeCe.Payload.User do
   User payload containing tool execution results.
   """
 
+  @behaviour Access
+
   @type tool_use_result :: %{
           stdout: String.t(),
           stderr: String.t(),
@@ -19,6 +21,15 @@ defmodule CeCe.Payload.User do
     :content,
     :tool_use_result
   ]
+
+  @impl Access
+  def fetch(struct, key), do: Map.fetch(struct, key)
+
+  @impl Access
+  def get_and_update(_, _, _), do: raise("CeCe.Payload.User is read-only")
+
+  @impl Access
+  def pop(_, _), do: raise("CeCe.Payload.User is read-only")
 
   def parse(json) do
     message = json["message"] || %{}

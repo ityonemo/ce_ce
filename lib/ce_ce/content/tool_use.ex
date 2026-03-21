@@ -5,6 +5,8 @@ defmodule CeCe.Content.ToolUse do
   Represents Claude's request to invoke a tool.
   """
 
+  @behaviour Access
+
   @type t :: %__MODULE__{
           id: String.t(),
           name: String.t(),
@@ -12,6 +14,15 @@ defmodule CeCe.Content.ToolUse do
         }
 
   defstruct [:id, :name, :input]
+
+  @impl Access
+  def fetch(struct, key), do: Map.fetch(struct, key)
+
+  @impl Access
+  def get_and_update(_, _, _), do: raise("CeCe.Content.ToolUse is read-only")
+
+  @impl Access
+  def pop(_, _), do: raise("CeCe.Content.ToolUse is read-only")
 
   def parse(json) do
     %__MODULE__{
