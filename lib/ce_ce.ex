@@ -144,7 +144,6 @@ defmodule CeCe do
   @impl ProtonStream
   def handle_stderr(data, state) when state.module == __MODULE__ do
     send(state.state, {:cece_stderr, data})
-
     {:noreply, state}
   end
 
