@@ -8,19 +8,21 @@ defmodule CeCe.Payload.Outbound.SystemElicitationComplete do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          elicitation_id: String.t(),
+          elicitationId: String.t(),
           response: map() | nil,
           cancelled: boolean()
         }
 
-  defstruct [:elicitation_id, :response, :cancelled]
+  @derive JSON.Encoder
+  defstruct [:elicitationId, :response, :cancelled]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: response; cancelled defaults to false
     %__MODULE__{
-      elicitation_id: json["elicitation_id"] || json["elicitationId"],
-      response: json["response"],
-      cancelled: json["cancelled"] || false
+      elicitationId: Map.fetch!(json, "elicitationId"),
+      response: Map.get(json, "response"),
+      cancelled: Map.get(json, "cancelled", false)
     }
   end
 end

@@ -13,59 +13,64 @@ defmodule CeCe.Payload.Outbound.Result do
 
   @type t :: %__MODULE__{
           subtype: :success | :error | atom(),
-          cost_usd: float() | nil,
-          duration_ms: integer() | nil,
-          duration_api_ms: integer() | nil,
-          is_error: boolean(),
-          num_turns: integer() | nil,
-          session_id: String.t() | nil,
-          total_cost_usd: float() | nil,
-          permission_denials: [PermissionDenial.t()],
+          costUsd: float() | nil,
+          durationMs: integer() | nil,
+          durationApiMs: integer() | nil,
+          isError: boolean(),
+          numTurns: integer() | nil,
+          sessionId: String.t() | nil,
+          totalCostUsd: float() | nil,
+          permissionDenials: [PermissionDenial.t()],
           usage: Usage.t() | nil,
-          model_usage: [ModelUsage.t()],
-          stop_reason: String.t() | nil,
+          modelUsage: [ModelUsage.t()],
+          stopReason: String.t() | nil,
           result: map() | nil,
-          structured_output: map() | nil
+          structuredOutput: map() | nil
         }
 
+  @derive JSON.Encoder
   defstruct [
     :subtype,
-    :cost_usd,
-    :duration_ms,
-    :duration_api_ms,
-    :is_error,
-    :num_turns,
-    :session_id,
-    :total_cost_usd,
-    :permission_denials,
+    :costUsd,
+    :durationMs,
+    :durationApiMs,
+    :isError,
+    :numTurns,
+    :sessionId,
+    :totalCostUsd,
+    :permissionDenials,
     :usage,
-    :model_usage,
-    :stop_reason,
+    :modelUsage,
+    :stopReason,
     :result,
-    :structured_output
+    :structuredOutput
   ]
 
+  @subtypes ~w[success error]a
+  @subtype_map Map.new(@subtypes, &{"#{&1}", &1})
+
   def parse(json) do
+    # Optional: subtype (defaults to success), costUsd, durationMs, durationApiMs,
+    #           isError (defaults to false), numTurns, sessionId, totalCostUsd,
+    #           permissionDenials, usage, modelUsage, stopReason, result, structuredOutput
     %__MODULE__{
-      subtype: parse_subtype(json["subtype"]),
-      cost_usd: json["cost_usd"],
-      duration_ms: json["duration_ms"],
-      duration_api_ms: json["duration_api_ms"],
-      is_error: json["is_error"] || false,
-      num_turns: json["num_turns"],
-      session_id: json["session_id"],
-      total_cost_usd: json["total_cost_usd"],
-      permission_denials: PermissionDenial.parse_list(json["permission_denials"]),
-      usage: Usage.parse(json["usage"]),
-      model_usage: ModelUsage.parse_list(json["model_usage"]),
-      stop_reason: json["stop_reason"] || json["stopReason"],
-      result: json["result"],
-      structured_output: json["structured_output"] || json["structuredOutput"]
+      subtype: parse_subtype(Map.get(json, "subtype")),
+      costUsd: Map.get(json, "costUsd"),
+      durationMs: Map.get(json, "durationMs"),
+      durationApiMs: Map.get(json, "durationApiMs"),
+      isError: Map.get(json, "isError", false),
+      numTurns: Map.get(json, "numTurns"),
+      sessionId: Map.get(json, "sessionId"),
+      totalCostUsd: Map.get(json, "totalCostUsd"),
+      permissionDenials: PermissionDenial.parse_list(Map.get(json, "permissionDenials")),
+      usage: Usage.parse(Map.get(json, "usage")),
+      modelUsage: ModelUsage.parse_list(Map.get(json, "modelUsage")),
+      stopReason: Map.get(json, "stopReason"),
+      result: Map.get(json, "result"),
+      structuredOutput: Map.get(json, "structuredOutput")
     }
   end
 
-  defp parse_subtype("success"), do: :success
-  defp parse_subtype("error"), do: :error
   defp parse_subtype(nil), do: :success
-  defp parse_subtype(other), do: String.to_atom(other)
+  defp parse_subtype(subtype), do: Map.fetch!(@subtype_map, subtype)
 end

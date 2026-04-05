@@ -8,25 +8,17 @@ defmodule CeCe.Payload.Inbound.ControlCancelAsyncMessage do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          message_id: String.t()
+          subtype: :cancelAsyncMessage,
+          messageId: String.t()
         }
 
-  defstruct [:message_id]
+  @derive JSON.Encoder
+  defstruct subtype: :cancelAsyncMessage, messageId: nil
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
     %__MODULE__{
-      message_id: json["message_id"] || json["messageId"]
+      messageId: Map.fetch!(json, "messageId")
     }
-  end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlCancelAsyncMessage do
-  def encode(struct, encoder) do
-    %{
-      "subtype" => "cancel_async_message",
-      "message_id" => struct.message_id
-    }
-    |> encoder.encode_map()
   end
 end

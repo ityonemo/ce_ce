@@ -8,17 +8,18 @@ defmodule CeCe.Payload.Outbound.StreamEvent do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          event_type: String.t(),
+          eventType: String.t(),
           data: map()
         }
 
-  defstruct [:event_type, :data]
+  @derive JSON.Encoder
+  defstruct [:eventType, :data]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
     %__MODULE__{
-      event_type: json["event_type"] || json["eventType"],
-      data: json["data"] || %{}
+      eventType: Map.fetch!(json, "eventType"),
+      data: Map.fetch!(json, "data")
     }
   end
 end

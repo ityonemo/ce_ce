@@ -8,23 +8,25 @@ defmodule CeCe.Payload.Outbound.SystemTaskProgress do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          task_id: String.t(),
+          taskId: String.t(),
           progress: float() | nil,
           message: String.t() | nil,
           current: integer() | nil,
           total: integer() | nil
         }
 
-  defstruct [:task_id, :progress, :message, :current, :total]
+  @derive JSON.Encoder
+  defstruct [:taskId, :progress, :message, :current, :total]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: progress, message, current, total
     %__MODULE__{
-      task_id: json["task_id"] || json["taskId"],
-      progress: json["progress"],
-      message: json["message"],
-      current: json["current"],
-      total: json["total"]
+      taskId: Map.fetch!(json, "taskId"),
+      progress: Map.get(json, "progress"),
+      message: Map.get(json, "message"),
+      current: Map.get(json, "current"),
+      total: Map.get(json, "total")
     }
   end
 end

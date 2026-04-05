@@ -8,28 +8,18 @@ defmodule CeCe.Payload.Inbound.ControlInterrupt do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          subtype: :interrupt,
           reason: String.t() | nil
         }
 
-  defstruct [:reason]
+  @derive JSON.Encoder
+  defstruct subtype: :interrupt, reason: nil
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: reason
     %__MODULE__{
-      reason: json["reason"]
+      reason: Map.get(json, "reason")
     }
   end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlInterrupt do
-  def encode(struct, encoder) do
-    map =
-      %{"subtype" => "interrupt"}
-      |> maybe_put("reason", struct.reason)
-
-    encoder.encode_map(map)
-  end
-
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

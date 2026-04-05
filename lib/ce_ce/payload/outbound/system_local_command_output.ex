@@ -10,19 +10,21 @@ defmodule CeCe.Payload.Outbound.SystemLocalCommandOutput do
   @type t :: %__MODULE__{
           command: String.t() | nil,
           output: String.t() | nil,
-          exit_code: integer() | nil,
-          is_error: boolean()
+          exitCode: integer() | nil,
+          isError: boolean()
         }
 
-  defstruct [:command, :output, :exit_code, :is_error]
+  @derive JSON.Encoder
+  defstruct [:command, :output, :exitCode, :isError]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: command, output, exitCode; isError defaults to false
     %__MODULE__{
-      command: json["command"],
-      output: json["output"],
-      exit_code: json["exit_code"] || json["exitCode"],
-      is_error: json["is_error"] || json["isError"] || false
+      command: Map.get(json, "command"),
+      output: Map.get(json, "output"),
+      exitCode: Map.get(json, "exitCode"),
+      isError: Map.get(json, "isError", false)
     }
   end
 end

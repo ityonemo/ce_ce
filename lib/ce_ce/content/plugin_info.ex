@@ -11,6 +11,7 @@ defmodule CeCe.Content.PluginInfo do
           enabled: boolean()
         }
 
+  @derive JSON.Encoder
   defstruct [:name, :description, :enabled]
 
   @doc "Parse decoded JSON map into struct."
@@ -25,9 +26,10 @@ defmodule CeCe.Content.PluginInfo do
   end
 
   def parse(json) when is_map(json) do
+    # Optional: description, enabled (defaults to true)
     %__MODULE__{
-      name: json["name"],
-      description: json["description"],
+      name: Map.fetch!(json, "name"),
+      description: Map.get(json, "description"),
       enabled: Map.get(json, "enabled", true)
     }
   end

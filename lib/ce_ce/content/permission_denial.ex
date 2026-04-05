@@ -6,21 +6,23 @@ defmodule CeCe.Content.PermissionDenial do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          tool_name: String.t(),
+          toolName: String.t(),
           reason: String.t() | nil,
           timestamp: String.t() | nil
         }
 
-  defstruct [:tool_name, :reason, :timestamp]
+  @derive JSON.Encoder
+  defstruct [:toolName, :reason, :timestamp]
 
   @doc "Parse decoded JSON map into struct."
   def parse(nil), do: nil
 
   def parse(json) when is_map(json) do
+    # Optional: reason, timestamp
     %__MODULE__{
-      tool_name: json["tool_name"] || json["toolName"],
-      reason: json["reason"],
-      timestamp: json["timestamp"]
+      toolName: Map.fetch!(json, "toolName"),
+      reason: Map.get(json, "reason"),
+      timestamp: Map.get(json, "timestamp")
     }
   end
 

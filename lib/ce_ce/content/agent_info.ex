@@ -11,6 +11,7 @@ defmodule CeCe.Content.AgentInfo do
           type: String.t() | nil
         }
 
+  @derive JSON.Encoder
   defstruct [:name, :description, :type]
 
   @doc "Parse decoded JSON map into struct."
@@ -25,10 +26,11 @@ defmodule CeCe.Content.AgentInfo do
   end
 
   def parse(json) when is_map(json) do
+    # Optional: description, type
     %__MODULE__{
-      name: json["name"],
-      description: json["description"],
-      type: json["type"]
+      name: Map.fetch!(json, "name"),
+      description: Map.get(json, "description"),
+      type: Map.get(json, "type")
     }
   end
 

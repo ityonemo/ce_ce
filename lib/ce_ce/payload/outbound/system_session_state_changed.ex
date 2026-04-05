@@ -8,19 +8,21 @@ defmodule CeCe.Payload.Outbound.SystemSessionStateChanged do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          previous_state: String.t() | nil,
-          new_state: String.t(),
+          previousState: String.t() | nil,
+          newState: String.t(),
           reason: String.t() | nil
         }
 
-  defstruct [:previous_state, :new_state, :reason]
+  @derive JSON.Encoder
+  defstruct [:previousState, :newState, :reason]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: previousState, reason
     %__MODULE__{
-      previous_state: json["previous_state"] || json["previousState"],
-      new_state: json["new_state"] || json["newState"],
-      reason: json["reason"]
+      previousState: Map.get(json, "previousState"),
+      newState: Map.fetch!(json, "newState"),
+      reason: Map.get(json, "reason")
     }
   end
 end

@@ -8,19 +8,21 @@ defmodule CeCe.Payload.Outbound.SystemHookProgress do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          hook_name: String.t(),
+          hookName: String.t(),
           progress: float() | nil,
           message: String.t() | nil
         }
 
-  defstruct [:hook_name, :progress, :message]
+  @derive JSON.Encoder
+  defstruct [:hookName, :progress, :message]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: progress, message
     %__MODULE__{
-      hook_name: json["hook_name"] || json["hookName"],
-      progress: json["progress"],
-      message: json["message"]
+      hookName: Map.fetch!(json, "hookName"),
+      progress: Map.get(json, "progress"),
+      message: Map.get(json, "message")
     }
   end
 end

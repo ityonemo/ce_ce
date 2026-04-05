@@ -8,28 +8,20 @@ defmodule CeCe.Payload.Inbound.ControlMcpToggle do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          server_name: String.t(),
+          subtype: :mcpToggle,
+          serverName: String.t(),
           enabled: boolean()
         }
 
-  defstruct [:server_name, :enabled]
+  @derive JSON.Encoder
+  defstruct subtype: :mcpToggle, serverName: nil, enabled: false
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # enabled defaults to false
     %__MODULE__{
-      server_name: json["server_name"] || json["serverName"],
-      enabled: json["enabled"] || false
+      serverName: Map.fetch!(json, "serverName"),
+      enabled: Map.get(json, "enabled", false)
     }
-  end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlMcpToggle do
-  def encode(struct, encoder) do
-    %{
-      "subtype" => "mcp_toggle",
-      "server_name" => struct.server_name,
-      "enabled" => struct.enabled
-    }
-    |> encoder.encode_map()
   end
 end

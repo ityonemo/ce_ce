@@ -15,14 +15,16 @@ defmodule CeCe.Payload.Outbound.AuthStatus do
           message: String.t() | nil
         }
 
+  @derive JSON.Encoder
   defstruct [:status, :account, :message]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: account, message
     %__MODULE__{
-      status: parse_status(json["status"]),
-      account: AccountInfo.parse(json["account"]),
-      message: json["message"]
+      status: parse_status(Map.get(json, "status")),
+      account: AccountInfo.parse(Map.get(json, "account")),
+      message: Map.get(json, "message")
     }
   end
 

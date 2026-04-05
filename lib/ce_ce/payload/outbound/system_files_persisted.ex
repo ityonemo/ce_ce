@@ -9,18 +9,20 @@ defmodule CeCe.Payload.Outbound.SystemFilesPersisted do
 
   @type t :: %__MODULE__{
           files: [String.t()],
-          count: integer() | nil
+          count: integer()
         }
 
+  @derive JSON.Encoder
   defstruct [:files, :count]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
-    files = json["files"] || []
+    files = Map.fetch!(json, "files")
 
+    # Optional: count (defaults to length of files)
     %__MODULE__{
       files: files,
-      count: json["count"] || length(files)
+      count: Map.get(json, "count", length(files))
     }
   end
 end

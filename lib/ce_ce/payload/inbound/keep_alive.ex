@@ -8,30 +8,18 @@ defmodule CeCe.Payload.Inbound.KeepAlive do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          type: :keepAlive,
           timestamp: String.t() | nil
         }
 
-  defstruct [:timestamp]
+  @derive JSON.Encoder
+  defstruct type: :keepAlive, timestamp: nil
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: timestamp
     %__MODULE__{
-      timestamp: json["timestamp"]
+      timestamp: Map.get(json, "timestamp")
     }
-  end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.KeepAlive do
-  def encode(struct, encoder) do
-    map = %{"type" => "keep_alive"}
-
-    map =
-      if struct.timestamp do
-        Map.put(map, "timestamp", struct.timestamp)
-      else
-        map
-      end
-
-    encoder.encode_map(map)
   end
 end

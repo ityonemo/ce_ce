@@ -10,15 +10,16 @@ defmodule CeCe.Payload.Outbound.RateLimitEvent do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          rate_limit: RateLimitInfo.t()
+          rateLimit: RateLimitInfo.t()
         }
 
-  defstruct [:rate_limit]
+  @derive JSON.Encoder
+  defstruct [:rateLimit]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
     %__MODULE__{
-      rate_limit: RateLimitInfo.parse(json["rate_limit"] || json["rateLimit"] || json)
+      rateLimit: RateLimitInfo.parse(Map.fetch!(json, "rateLimit"))
     }
   end
 end

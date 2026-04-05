@@ -8,36 +8,22 @@ defmodule CeCe.Payload.Inbound.ControlHookCallback do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          hook_id: String.t(),
+          subtype: :hookCallback,
+          hookId: String.t(),
           result: map() | nil,
           error: String.t() | nil
         }
 
-  defstruct [:hook_id, :result, :error]
+  @derive JSON.Encoder
+  defstruct subtype: :hookCallback, hookId: nil, result: nil, error: nil
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: result, error
     %__MODULE__{
-      hook_id: json["hook_id"] || json["hookId"],
-      result: json["result"],
-      error: json["error"]
+      hookId: Map.fetch!(json, "hookId"),
+      result: Map.get(json, "result"),
+      error: Map.get(json, "error")
     }
   end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlHookCallback do
-  def encode(struct, encoder) do
-    map =
-      %{
-        "subtype" => "hook_callback",
-        "hook_id" => struct.hook_id
-      }
-      |> maybe_put("result", struct.result)
-      |> maybe_put("error", struct.error)
-
-    encoder.encode_map(map)
-  end
-
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

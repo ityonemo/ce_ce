@@ -8,21 +8,23 @@ defmodule CeCe.Payload.Outbound.SystemTaskNotification do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          task_id: String.t(),
-          notification_type: String.t() | nil,
+          taskId: String.t(),
+          notificationType: String.t() | nil,
           message: String.t() | nil,
           details: map()
         }
 
-  defstruct [:task_id, :notification_type, :message, :details]
+  @derive JSON.Encoder
+  defstruct [:taskId, :notificationType, :message, :details]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: notificationType, message
     %__MODULE__{
-      task_id: json["task_id"] || json["taskId"],
-      notification_type: json["notification_type"] || json["notificationType"],
-      message: json["message"],
-      details: json["details"] || %{}
+      taskId: Map.fetch!(json, "taskId"),
+      notificationType: Map.get(json, "notificationType"),
+      message: Map.get(json, "message"),
+      details: Map.fetch!(json, "details")
     }
   end
 end

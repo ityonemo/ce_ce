@@ -8,27 +8,29 @@ defmodule CeCe.Payload.Outbound.ToolUseSummary do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          tool_use_id: String.t(),
-          tool_name: String.t(),
+          toolUseId: String.t(),
+          toolName: String.t(),
           input: map(),
           output: String.t() | nil,
           error: String.t() | nil,
-          is_error: boolean(),
-          duration_ms: integer() | nil
+          isError: boolean(),
+          durationMs: integer() | nil
         }
 
-  defstruct [:tool_use_id, :tool_name, :input, :output, :error, :is_error, :duration_ms]
+  @derive JSON.Encoder
+  defstruct [:toolUseId, :toolName, :input, :output, :error, :isError, :durationMs]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: output, error, isError (defaults to false), durationMs
     %__MODULE__{
-      tool_use_id: json["tool_use_id"] || json["toolUseId"],
-      tool_name: json["tool_name"] || json["toolName"],
-      input: json["input"] || %{},
-      output: json["output"],
-      error: json["error"],
-      is_error: json["is_error"] || json["isError"] || false,
-      duration_ms: json["duration_ms"] || json["durationMs"]
+      toolUseId: Map.fetch!(json, "toolUseId"),
+      toolName: Map.fetch!(json, "toolName"),
+      input: Map.fetch!(json, "input"),
+      output: Map.get(json, "output"),
+      error: Map.get(json, "error"),
+      isError: Map.get(json, "isError", false),
+      durationMs: Map.get(json, "durationMs")
     }
   end
 end

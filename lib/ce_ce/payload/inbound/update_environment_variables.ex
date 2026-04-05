@@ -8,25 +8,17 @@ defmodule CeCe.Payload.Inbound.UpdateEnvironmentVariables do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          type: :updateEnvironmentVariables,
           variables: map()
         }
 
-  defstruct [:variables]
+  @derive JSON.Encoder
+  defstruct type: :updateEnvironmentVariables, variables: %{}
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
     %__MODULE__{
-      variables: json["variables"] || %{}
+      variables: Map.fetch!(json, "variables")
     }
-  end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.UpdateEnvironmentVariables do
-  def encode(struct, encoder) do
-    %{
-      "type" => "update_environment_variables",
-      "variables" => struct.variables
-    }
-    |> encoder.encode_map()
   end
 end

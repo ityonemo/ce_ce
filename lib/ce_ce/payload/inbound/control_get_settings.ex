@@ -7,19 +7,15 @@ defmodule CeCe.Payload.Inbound.ControlGetSettings do
 
   use CeCe.AccessFunctions
 
-  @type t :: %__MODULE__{}
+  @type t :: %__MODULE__{
+          subtype: :getSettings
+        }
 
-  defstruct []
+  @derive JSON.Encoder
+  defstruct subtype: :getSettings
 
   @doc "Parse decoded JSON map into struct."
   def parse(_json) do
     %__MODULE__{}
-  end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlGetSettings do
-  def encode(_struct, encoder) do
-    %{"subtype" => "get_settings"}
-    |> encoder.encode_map()
   end
 end

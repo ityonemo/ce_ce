@@ -13,14 +13,16 @@ defmodule CeCe.Payload.Outbound.SystemStatus do
           details: map()
         }
 
+  @derive JSON.Encoder
   defstruct [:status, :message, :details]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: message
     %__MODULE__{
-      status: json["status"],
-      message: json["message"],
-      details: json["details"] || %{}
+      status: Map.fetch!(json, "status"),
+      message: Map.get(json, "message"),
+      details: Map.fetch!(json, "details")
     }
   end
 end

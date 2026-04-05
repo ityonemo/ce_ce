@@ -9,11 +9,12 @@ defmodule CeCe.Content.Text do
           text: String.t()
         }
 
+  @derive JSON.Encoder
   defstruct [:text]
 
   def parse(json) do
     %__MODULE__{
-      text: json["text"]
+      text: Map.fetch!(json, "text")
     }
   end
 end

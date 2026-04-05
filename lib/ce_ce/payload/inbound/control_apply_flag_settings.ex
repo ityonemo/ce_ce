@@ -8,25 +8,17 @@ defmodule CeCe.Payload.Inbound.ControlApplyFlagSettings do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          subtype: :applyFlagSettings,
           settings: map()
         }
 
-  defstruct [:settings]
+  @derive JSON.Encoder
+  defstruct subtype: :applyFlagSettings, settings: %{}
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
     %__MODULE__{
-      settings: json["settings"] || %{}
+      settings: Map.fetch!(json, "settings")
     }
-  end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlApplyFlagSettings do
-  def encode(struct, encoder) do
-    %{
-      "subtype" => "apply_flag_settings",
-      "settings" => struct.settings
-    }
-    |> encoder.encode_map()
   end
 end

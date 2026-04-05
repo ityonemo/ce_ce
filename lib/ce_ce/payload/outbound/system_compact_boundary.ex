@@ -8,19 +8,21 @@ defmodule CeCe.Payload.Outbound.SystemCompactBoundary do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          boundary_id: String.t() | nil,
-          message_count: integer() | nil,
-          token_count: integer() | nil
+          boundaryId: String.t() | nil,
+          messageCount: integer() | nil,
+          tokenCount: integer() | nil
         }
 
-  defstruct [:boundary_id, :message_count, :token_count]
+  @derive JSON.Encoder
+  defstruct [:boundaryId, :messageCount, :tokenCount]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # All fields are optional
     %__MODULE__{
-      boundary_id: json["boundary_id"] || json["boundaryId"],
-      message_count: json["message_count"] || json["messageCount"],
-      token_count: json["token_count"] || json["tokenCount"]
+      boundaryId: Map.get(json, "boundaryId"),
+      messageCount: Map.get(json, "messageCount"),
+      tokenCount: Map.get(json, "tokenCount")
     }
   end
 end

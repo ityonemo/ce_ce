@@ -11,12 +11,13 @@ defmodule CeCe.Payload.Outbound.StreamlinedText do
           text: String.t()
         }
 
+  @derive JSON.Encoder
   defstruct [:text]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
     %__MODULE__{
-      text: json["text"]
+      text: Map.fetch!(json, "text")
     }
   end
 end

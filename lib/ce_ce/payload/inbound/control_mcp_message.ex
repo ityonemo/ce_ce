@@ -8,28 +8,19 @@ defmodule CeCe.Payload.Inbound.ControlMcpMessage do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          server_name: String.t(),
+          subtype: :mcpMessage,
+          serverName: String.t(),
           message: map()
         }
 
-  defstruct [:server_name, :message]
+  @derive JSON.Encoder
+  defstruct subtype: :mcpMessage, serverName: nil, message: %{}
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
     %__MODULE__{
-      server_name: json["server_name"] || json["serverName"],
-      message: json["message"] || %{}
+      serverName: Map.fetch!(json, "serverName"),
+      message: Map.fetch!(json, "message")
     }
-  end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlMcpMessage do
-  def encode(struct, encoder) do
-    %{
-      "subtype" => "mcp_message",
-      "server_name" => struct.server_name,
-      "message" => struct.message
-    }
-    |> encoder.encode_map()
   end
 end

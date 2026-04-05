@@ -11,6 +11,7 @@ defmodule CeCe.Content.SlashCommand do
           args: [String.t()]
         }
 
+  @derive JSON.Encoder
   defstruct [:name, :description, :args]
 
   @doc "Parse decoded JSON map into struct."
@@ -25,10 +26,11 @@ defmodule CeCe.Content.SlashCommand do
   end
 
   def parse(json) when is_map(json) do
+    # Optional: description
     %__MODULE__{
-      name: json["name"],
-      description: json["description"],
-      args: json["args"] || []
+      name: Map.fetch!(json, "name"),
+      description: Map.get(json, "description"),
+      args: Map.fetch!(json, "args")
     }
   end
 

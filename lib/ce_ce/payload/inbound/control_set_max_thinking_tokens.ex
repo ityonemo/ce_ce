@@ -8,25 +8,17 @@ defmodule CeCe.Payload.Inbound.ControlSetMaxThinkingTokens do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          max_tokens: integer()
+          subtype: :setMaxThinkingTokens,
+          maxTokens: integer()
         }
 
-  defstruct [:max_tokens]
+  @derive JSON.Encoder
+  defstruct subtype: :setMaxThinkingTokens, maxTokens: nil
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
     %__MODULE__{
-      max_tokens: json["max_tokens"] || json["maxTokens"]
+      maxTokens: Map.fetch!(json, "maxTokens")
     }
-  end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlSetMaxThinkingTokens do
-  def encode(struct, encoder) do
-    %{
-      "subtype" => "set_max_thinking_tokens",
-      "max_tokens" => struct.max_tokens
-    }
-    |> encoder.encode_map()
   end
 end

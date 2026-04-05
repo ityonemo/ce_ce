@@ -8,36 +8,22 @@ defmodule CeCe.Payload.Inbound.ControlCanUseTool do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          tool_use_id: String.t(),
+          subtype: :canUseTool,
+          toolUseId: String.t(),
           allowed: boolean(),
           reason: String.t() | nil
         }
 
-  defstruct [:tool_use_id, :allowed, :reason]
+  @derive JSON.Encoder
+  defstruct subtype: :canUseTool, toolUseId: nil, allowed: false, reason: nil
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: reason; allowed defaults to false
     %__MODULE__{
-      tool_use_id: json["tool_use_id"] || json["toolUseId"],
-      allowed: json["allowed"] || false,
-      reason: json["reason"]
+      toolUseId: Map.fetch!(json, "toolUseId"),
+      allowed: Map.get(json, "allowed", false),
+      reason: Map.get(json, "reason")
     }
   end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlCanUseTool do
-  def encode(struct, encoder) do
-    map =
-      %{
-        "subtype" => "can_use_tool",
-        "tool_use_id" => struct.tool_use_id,
-        "allowed" => struct.allowed
-      }
-      |> maybe_put("reason", struct.reason)
-
-    encoder.encode_map(map)
-  end
-
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

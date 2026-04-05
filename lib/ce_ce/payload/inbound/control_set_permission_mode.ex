@@ -8,25 +8,17 @@ defmodule CeCe.Payload.Inbound.ControlSetPermissionMode do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          subtype: :setPermissionMode,
           mode: String.t()
         }
 
-  defstruct [:mode]
+  @derive JSON.Encoder
+  defstruct subtype: :setPermissionMode, mode: nil
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
     %__MODULE__{
-      mode: json["mode"]
+      mode: Map.fetch!(json, "mode")
     }
-  end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlSetPermissionMode do
-  def encode(struct, encoder) do
-    %{
-      "subtype" => "set_permission_mode",
-      "mode" => struct.mode
-    }
-    |> encoder.encode_map()
   end
 end

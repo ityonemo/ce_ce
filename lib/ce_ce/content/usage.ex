@@ -6,28 +6,30 @@ defmodule CeCe.Content.Usage do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          input_tokens: integer() | nil,
-          output_tokens: integer() | nil,
-          cache_creation_input_tokens: integer() | nil,
-          cache_read_input_tokens: integer() | nil
+          inputTokens: integer() | nil,
+          outputTokens: integer() | nil,
+          cacheCreationInputTokens: integer() | nil,
+          cacheReadInputTokens: integer() | nil
         }
 
+  @derive JSON.Encoder
   defstruct [
-    :input_tokens,
-    :output_tokens,
-    :cache_creation_input_tokens,
-    :cache_read_input_tokens
+    :inputTokens,
+    :outputTokens,
+    :cacheCreationInputTokens,
+    :cacheReadInputTokens
   ]
 
   @doc "Parse decoded JSON map into struct."
   def parse(nil), do: nil
 
   def parse(json) when is_map(json) do
+    # All fields are optional
     %__MODULE__{
-      input_tokens: json["input_tokens"],
-      output_tokens: json["output_tokens"],
-      cache_creation_input_tokens: json["cache_creation_input_tokens"],
-      cache_read_input_tokens: json["cache_read_input_tokens"]
+      inputTokens: Map.get(json, "inputTokens"),
+      outputTokens: Map.get(json, "outputTokens"),
+      cacheCreationInputTokens: Map.get(json, "cacheCreationInputTokens"),
+      cacheReadInputTokens: Map.get(json, "cacheReadInputTokens")
     }
   end
 end

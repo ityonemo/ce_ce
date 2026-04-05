@@ -7,20 +7,22 @@ defmodule CeCe.Content.RateLimitInfo do
 
   @type t :: %__MODULE__{
           type: String.t(),
-          retry_after: integer() | nil,
+          retryAfter: integer() | nil,
           message: String.t() | nil
         }
 
-  defstruct [:type, :retry_after, :message]
+  @derive JSON.Encoder
+  defstruct [:type, :retryAfter, :message]
 
   @doc "Parse decoded JSON map into struct."
   def parse(nil), do: nil
 
   def parse(json) when is_map(json) do
+    # Optional: retryAfter, message
     %__MODULE__{
-      type: json["type"],
-      retry_after: json["retry_after"] || json["retryAfter"],
-      message: json["message"]
+      type: Map.fetch!(json, "type"),
+      retryAfter: Map.get(json, "retryAfter"),
+      message: Map.get(json, "message")
     }
   end
 end

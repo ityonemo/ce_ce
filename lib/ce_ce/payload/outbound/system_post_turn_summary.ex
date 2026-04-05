@@ -10,21 +10,23 @@ defmodule CeCe.Payload.Outbound.SystemPostTurnSummary do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          turn_number: integer() | nil,
+          turnNumber: integer() | nil,
           usage: Usage.t() | nil,
-          duration_ms: integer() | nil,
-          cost_usd: float() | nil
+          durationMs: integer() | nil,
+          costUsd: float() | nil
         }
 
-  defstruct [:turn_number, :usage, :duration_ms, :cost_usd]
+  @derive JSON.Encoder
+  defstruct [:turnNumber, :usage, :durationMs, :costUsd]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # All fields are optional
     %__MODULE__{
-      turn_number: json["turn_number"] || json["turnNumber"],
-      usage: Usage.parse(json["usage"]),
-      duration_ms: json["duration_ms"] || json["durationMs"],
-      cost_usd: json["cost_usd"] || json["costUsd"]
+      turnNumber: Map.get(json, "turnNumber"),
+      usage: Usage.parse(Map.get(json, "usage")),
+      durationMs: Map.get(json, "durationMs"),
+      costUsd: Map.get(json, "costUsd")
     }
   end
 end

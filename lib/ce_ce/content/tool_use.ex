@@ -13,13 +13,14 @@ defmodule CeCe.Content.ToolUse do
           input: map()
         }
 
+  @derive JSON.Encoder
   defstruct [:id, :name, :input]
 
   def parse(json) do
     %__MODULE__{
-      id: json["id"],
-      name: json["name"],
-      input: json["input"] || %{}
+      id: Map.fetch!(json, "id"),
+      name: Map.fetch!(json, "name"),
+      input: Map.fetch!(json, "input")
     }
   end
 end

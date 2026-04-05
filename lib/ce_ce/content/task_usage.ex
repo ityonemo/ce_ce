@@ -8,19 +8,21 @@ defmodule CeCe.Content.TaskUsage do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          task_id: String.t(),
+          taskId: String.t(),
           usage: Usage.t()
         }
 
-  defstruct [:task_id, :usage]
+  @derive JSON.Encoder
+  defstruct [:taskId, :usage]
 
   @doc "Parse decoded JSON map into struct."
   def parse(nil), do: nil
 
   def parse(json) when is_map(json) do
+    # Optional: usage
     %__MODULE__{
-      task_id: json["task_id"] || json["taskId"],
-      usage: Usage.parse(json["usage"])
+      taskId: Map.fetch!(json, "taskId"),
+      usage: Usage.parse(Map.get(json, "usage"))
     }
   end
 

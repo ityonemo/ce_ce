@@ -9,18 +9,20 @@ defmodule CeCe.Content.ModelUsage do
 
   @type t :: %__MODULE__{
           model: String.t(),
-          usage: Usage.t()
+          usage: Usage.t() | nil
         }
 
+  @derive JSON.Encoder
   defstruct [:model, :usage]
 
   @doc "Parse decoded JSON map into struct."
   def parse(nil), do: nil
 
   def parse(json) when is_map(json) do
+    # Optional: usage
     %__MODULE__{
-      model: json["model"],
-      usage: Usage.parse(json["usage"])
+      model: Map.fetch!(json, "model"),
+      usage: Usage.parse(Map.get(json, "usage"))
     }
   end
 

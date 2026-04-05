@@ -8,10 +8,11 @@ defmodule CeCe.Content.ModelInfo do
   @type t :: %__MODULE__{
           id: String.t(),
           name: String.t() | nil,
-          max_tokens: integer() | nil
+          maxTokens: integer() | nil
         }
 
-  defstruct [:id, :name, :max_tokens]
+  @derive JSON.Encoder
+  defstruct [:id, :name, :maxTokens]
 
   @doc "Parse decoded JSON map into struct."
   def parse(nil), do: nil
@@ -20,15 +21,16 @@ defmodule CeCe.Content.ModelInfo do
     %__MODULE__{
       id: json,
       name: nil,
-      max_tokens: nil
+      maxTokens: nil
     }
   end
 
   def parse(json) when is_map(json) do
+    # Optional: name, maxTokens
     %__MODULE__{
-      id: json["id"],
-      name: json["name"],
-      max_tokens: json["max_tokens"] || json["maxTokens"]
+      id: Map.fetch!(json, "id"),
+      name: Map.get(json, "name"),
+      maxTokens: Map.get(json, "maxTokens")
     }
   end
 

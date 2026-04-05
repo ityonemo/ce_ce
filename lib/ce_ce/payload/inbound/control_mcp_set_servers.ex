@@ -8,25 +8,17 @@ defmodule CeCe.Payload.Inbound.ControlMcpSetServers do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          subtype: :mcpSetServers,
           servers: [map()]
         }
 
-  defstruct [:servers]
+  @derive JSON.Encoder
+  defstruct subtype: :mcpSetServers, servers: []
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
     %__MODULE__{
-      servers: json["servers"] || []
+      servers: Map.fetch!(json, "servers")
     }
-  end
-end
-
-defimpl JSON.Encoder, for: CeCe.Payload.Inbound.ControlMcpSetServers do
-  def encode(struct, encoder) do
-    %{
-      "subtype" => "mcp_set_servers",
-      "servers" => struct.servers
-    }
-    |> encoder.encode_map()
   end
 end

@@ -8,19 +8,21 @@ defmodule CeCe.Payload.Outbound.SystemHookStarted do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          hook_name: String.t(),
-          hook_type: String.t() | nil,
+          hookName: String.t(),
+          hookType: String.t() | nil,
           context: map()
         }
 
-  defstruct [:hook_name, :hook_type, :context]
+  @derive JSON.Encoder
+  defstruct [:hookName, :hookType, :context]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: hookType
     %__MODULE__{
-      hook_name: json["hook_name"] || json["hookName"],
-      hook_type: json["hook_type"] || json["hookType"],
-      context: json["context"] || %{}
+      hookName: Map.fetch!(json, "hookName"),
+      hookType: Map.get(json, "hookType"),
+      context: Map.fetch!(json, "context")
     }
   end
 end

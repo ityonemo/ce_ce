@@ -8,23 +8,25 @@ defmodule CeCe.Payload.Outbound.ToolProgress do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
-          tool_use_id: String.t(),
-          tool_name: String.t(),
+          toolUseId: String.t(),
+          toolName: String.t(),
           progress: float() | nil,
           message: String.t() | nil,
           content: String.t() | nil
         }
 
-  defstruct [:tool_use_id, :tool_name, :progress, :message, :content]
+  @derive JSON.Encoder
+  defstruct [:toolUseId, :toolName, :progress, :message, :content]
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do
+    # Optional: progress, message, content
     %__MODULE__{
-      tool_use_id: json["tool_use_id"] || json["toolUseId"],
-      tool_name: json["tool_name"] || json["toolName"],
-      progress: json["progress"],
-      message: json["message"],
-      content: json["content"]
+      toolUseId: Map.fetch!(json, "toolUseId"),
+      toolName: Map.fetch!(json, "toolName"),
+      progress: Map.get(json, "progress"),
+      message: Map.get(json, "message"),
+      content: Map.get(json, "content")
     }
   end
 end
