@@ -42,12 +42,31 @@ defmodule CeCe.Payload.User do
 
   defp parse_tool_use_result(nil), do: nil
 
-  defp parse_tool_use_result(result) do
+  defp parse_tool_use_result(result) when is_map(result) do
     %{
-      stdout: result["stdout"],
-      stderr: result["stderr"],
-      interrupted: result["interrupted"] || false,
-      is_image: result["isImage"] || false
+      stdout: Map.get(result, "stdout") || Map.get(result, :stdout),
+      stderr: Map.get(result, "stderr") || Map.get(result, :stderr),
+      interrupted: Map.get(result, "interrupted") || Map.get(result, :interrupted) || false,
+      is_image: Map.get(result, "isImage") || Map.get(result, :is_image) || false
+    }
+  end
+
+  defp parse_tool_use_result(result) when is_list(result) do
+    %{
+      stdout: Keyword.get(result, :stdout),
+      stderr: Keyword.get(result, :stderr),
+      interrupted: Keyword.get(result, :interrupted, false),
+      is_image: Keyword.get(result, :is_image, false)
+    }
+  end
+
+  # Handle string error messages
+  defp parse_tool_use_result(result) when is_binary(result) do
+    %{
+      stdout: nil,
+      stderr: result,
+      interrupted: false,
+      is_image: false
     }
   end
 end
