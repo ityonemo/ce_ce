@@ -27,7 +27,7 @@ defmodule CeCeTest do
       assert message.type == :system
       assert message.session_id == "abc-123"
       assert message.uuid == "def-456"
-      assert message.payload.subtype == :init
+      assert %CeCe.Payload.Outbound.SystemInit{} = message.payload
       assert message.payload.cwd == "/home/user"
       assert message.payload.model == "claude-opus-4-5"
       assert message.payload.tools == ["Bash", "Read"]

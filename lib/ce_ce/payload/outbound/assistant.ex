@@ -1,4 +1,4 @@
-defmodule CeCe.Payload.Assistant do
+defmodule CeCe.Payload.Outbound.Assistant do
   @moduledoc """
   Assistant payload containing Claude's response.
 
@@ -7,7 +7,7 @@ defmodule CeCe.Payload.Assistant do
   - `CeCe.Content.ToolUse` - Tool invocation
   """
 
-  @behaviour Access
+  use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
           model: String.t(),
@@ -24,15 +24,6 @@ defmodule CeCe.Payload.Assistant do
     :stop_reason,
     :usage
   ]
-
-  @impl Access
-  def fetch(struct, key), do: Map.fetch(struct, key)
-
-  @impl Access
-  def get_and_update(_, _, _), do: raise("CeCe.Payload.Assistant is read-only")
-
-  @impl Access
-  def pop(_, _), do: raise("CeCe.Payload.Assistant is read-only")
 
   def parse(json) do
     message = json["message"] || %{}

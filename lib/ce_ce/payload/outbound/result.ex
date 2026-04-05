@@ -1,11 +1,15 @@
-defmodule CeCe.Payload.Result do
+defmodule CeCe.Payload.Outbound.Result do
   @moduledoc """
   Result payload, sent when Claude completes a turn.
 
-  Contains completion status and any permission denials.
+  Contains completion status, usage information, and any permission denials.
   """
 
-  @behaviour Access
+  alias CeCe.Content.Usage
+  alias CeCe.Content.ModelUsage
+  alias CeCe.Content.PermissionDenial
+
+  use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
           subtype: :success | :error | atom(),
@@ -16,7 +20,12 @@ defmodule CeCe.Payload.Result do
           num_turns: integer() | nil,
           session_id: String.t() | nil,
           total_cost_usd: float() | nil,
-          permission_denials: list()
+          permission_denials: [PermissionDenial.t()],
+          usage: Usage.t() | nil,
+          model_usage: [ModelUsage.t()],
+          stop_reason: String.t() | nil,
+          result: map() | nil,
+          structured_output: map() | nil
         }
 
   defstruct [
@@ -28,17 +37,13 @@ defmodule CeCe.Payload.Result do
     :num_turns,
     :session_id,
     :total_cost_usd,
-    :permission_denials
+    :permission_denials,
+    :usage,
+    :model_usage,
+    :stop_reason,
+    :result,
+    :structured_output
   ]
-
-  @impl Access
-  def fetch(struct, key), do: Map.fetch(struct, key)
-
-  @impl Access
-  def get_and_update(_, _, _), do: raise("CeCe.Payload.Result is read-only")
-
-  @impl Access
-  def pop(_, _), do: raise("CeCe.Payload.Result is read-only")
 
   def parse(json) do
     %__MODULE__{
@@ -50,7 +55,12 @@ defmodule CeCe.Payload.Result do
       num_turns: json["num_turns"],
       session_id: json["session_id"],
       total_cost_usd: json["total_cost_usd"],
-      permission_denials: json["permission_denials"] || []
+      permission_denials: PermissionDenial.parse_list(json["permission_denials"]),
+      usage: Usage.parse(json["usage"]),
+      model_usage: ModelUsage.parse_list(json["model_usage"]),
+      stop_reason: json["stop_reason"] || json["stopReason"],
+      result: json["result"],
+      structured_output: json["structured_output"] || json["structuredOutput"]
     }
   end
 

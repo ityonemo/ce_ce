@@ -1,9 +1,9 @@
-defmodule CeCe.Payload.User do
+defmodule CeCe.Payload.Inbound.User do
   @moduledoc """
   User payload containing tool execution results.
   """
 
-  @behaviour Access
+  use CeCe.AccessFunctions
 
   @type tool_use_result :: %{
           stdout: String.t(),
@@ -14,29 +14,29 @@ defmodule CeCe.Payload.User do
 
   @type t :: %__MODULE__{
           content: [map()],
-          tool_use_result: tool_use_result() | nil
+          tool_use_result: tool_use_result() | nil,
+          is_replay: boolean(),
+          priority: integer() | nil,
+          timestamp: String.t() | nil
         }
 
   defstruct [
     :content,
-    :tool_use_result
+    :tool_use_result,
+    :is_replay,
+    :priority,
+    :timestamp
   ]
-
-  @impl Access
-  def fetch(struct, key), do: Map.fetch(struct, key)
-
-  @impl Access
-  def get_and_update(_, _, _), do: raise("CeCe.Payload.User is read-only")
-
-  @impl Access
-  def pop(_, _), do: raise("CeCe.Payload.User is read-only")
 
   def parse(json) do
     message = json["message"] || %{}
 
     %__MODULE__{
       content: message["content"] || [],
-      tool_use_result: parse_tool_use_result(json["tool_use_result"])
+      tool_use_result: parse_tool_use_result(json["tool_use_result"]),
+      is_replay: json["is_replay"] || json["isReplay"] || false,
+      priority: json["priority"],
+      timestamp: json["timestamp"]
     }
   end
 
