@@ -222,12 +222,13 @@ defmodule CeCe do
   defp parse_json(""), do: {:error, :empty}
 
   defp parse_json(json_string) do
-    case :json.decode(json_string) do
-      map when is_map(map) ->
+    case JSON.decode(json_string) do
+      {:ok, map} when is_map(map) ->
         {:ok, CeCe.Message.parse(map)}
+
+      {:error, _} ->
+        {:error, :invalid_json}
     end
-  rescue
-    _ -> {:error, :invalid_json}
   end
 
   defp deliver_message(message, state) do

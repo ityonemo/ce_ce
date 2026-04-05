@@ -12,7 +12,7 @@ defmodule CeCe.Message do
 
   @behaviour Access
 
-  @type message_type :: :system | :assistant | :user
+  @type message_type :: :system | :assistant | :user | :result
 
   @type t :: %__MODULE__{
           type: message_type(),
@@ -49,8 +49,10 @@ defmodule CeCe.Message do
   defp parse_type("system"), do: :system
   defp parse_type("assistant"), do: :assistant
   defp parse_type("user"), do: :user
+  defp parse_type("result"), do: :result
 
   defp parse_payload(%{"type" => "system"} = json), do: CeCe.Payload.System.parse(json)
   defp parse_payload(%{"type" => "assistant"} = json), do: CeCe.Payload.Assistant.parse(json)
   defp parse_payload(%{"type" => "user"} = json), do: CeCe.Payload.User.parse(json)
+  defp parse_payload(%{"type" => "result"} = json), do: CeCe.Payload.Result.parse(json)
 end
