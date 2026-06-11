@@ -3,6 +3,7 @@ defmodule CeCe.Messages.Outbound.StreamEventTest do
 
   import CeCe.Test.RoundTrip
 
+  alias CeCe.Message
   alias CeCe.Payload.Outbound.StreamEvent
 
   describe "round-trip" do
@@ -16,7 +17,16 @@ defmodule CeCe.Messages.Outbound.StreamEventTest do
         "data": {"text": "Hello"}
       }|
 
-      assert_round_trip(json, StreamEvent, ["eventType", "data"])
+      assert_round_trip(json, %Message{
+        type: :streamEvent,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %StreamEvent{
+          eventType: "delta",
+          data: %{"text" => "Hello"}
+        }
+      })
     end
   end
 end

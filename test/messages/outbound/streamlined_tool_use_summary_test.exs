@@ -3,6 +3,7 @@ defmodule CeCe.Messages.Outbound.StreamlinedToolUseSummaryTest do
 
   import CeCe.Test.RoundTrip
 
+  alias CeCe.Message
   alias CeCe.Payload.Outbound.StreamlinedToolUseSummary
 
   describe "round-trip" do
@@ -18,12 +19,18 @@ defmodule CeCe.Messages.Outbound.StreamlinedToolUseSummaryTest do
         "toolError": null
       }|
 
-      assert_round_trip(json, StreamlinedToolUseSummary, [
-        "toolName",
-        "toolInput",
-        "toolOutput",
-        "toolError"
-      ])
+      assert_round_trip(json, %Message{
+        type: :streamlinedToolUseSummary,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %StreamlinedToolUseSummary{
+          toolName: "Bash",
+          toolInput: %{"command" => "ls"},
+          toolOutput: "file1.txt",
+          toolError: nil
+        }
+      })
     end
   end
 end

@@ -11,6 +11,7 @@ defmodule CeCe.Payload.Outbound.SystemInit do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          subtype: :init,
           cwd: String.t(),
           tools: [String.t()],
           mcpServers: [McpServerStatus.t()],
@@ -26,20 +27,19 @@ defmodule CeCe.Payload.Outbound.SystemInit do
         }
 
   @derive JSON.Encoder
-  defstruct [
-    :cwd,
-    :tools,
-    :mcpServers,
-    :model,
-    :permissionMode,
-    :slashCommands,
-    :apiKeySource,
-    :claudeCodeVersion,
-    :outputStyle,
-    :agents,
-    :skills,
-    :plugins
-  ]
+  defstruct subtype: :init,
+            cwd: nil,
+            tools: [],
+            mcpServers: [],
+            model: nil,
+            permissionMode: nil,
+            slashCommands: [],
+            apiKeySource: nil,
+            claudeCodeVersion: nil,
+            outputStyle: nil,
+            agents: [],
+            skills: [],
+            plugins: []
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) do

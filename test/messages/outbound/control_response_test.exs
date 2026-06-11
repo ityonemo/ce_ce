@@ -3,6 +3,7 @@ defmodule CeCe.Messages.Outbound.ControlResponseTest do
 
   import CeCe.Test.RoundTrip
 
+  alias CeCe.Message
   alias CeCe.Payload.Outbound.ControlResponse
 
   describe "round-trip" do
@@ -18,7 +19,18 @@ defmodule CeCe.Messages.Outbound.ControlResponseTest do
         "error": null
       }|
 
-      assert_round_trip(json, ControlResponse, ["requestId", "success", "data", "error"])
+      assert_round_trip(json, %Message{
+        type: :controlResponse,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %ControlResponse{
+          requestId: "req_123",
+          success: true,
+          data: %{"status" => "ok"},
+          error: nil
+        }
+      })
     end
   end
 end

@@ -1,7 +1,14 @@
 defmodule CeCe.Messages.Inbound.ControlRequestTest do
   use ExUnit.Case
 
-  alias CeCe.Payload.Inbound.ControlRequest
+  import CeCe.Test.RoundTrip
+
+  alias CeCe.Message
+  alias CeCe.Payload.Inbound.ControlInitialize
+  alias CeCe.Payload.Inbound.ControlInterrupt
+  alias CeCe.Payload.Inbound.ControlCanUseTool
+  alias CeCe.Payload.Inbound.ControlSetModel
+  alias CeCe.Payload.Inbound.ControlMcpStatus
 
   describe "round-trip" do
     test "controlRequest/initialize" do
@@ -17,15 +24,19 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
         "permissionMode": "default"
       }|
 
-      decoded = JSON.decode!(json)
-      struct = ControlRequest.parse(decoded)
-      encoded = JSON.encode!(struct) |> JSON.decode!()
-
-      assert encoded["subtype"] == "initialize"
-      assert encoded["cwd"] == "/home/user"
-      assert encoded["systemMessage"] == "Be concise"
-      assert encoded["model"] == "claude-opus-4-5"
-      assert encoded["permissionMode"] == "default"
+      assert_round_trip(json, %Message{
+        type: :controlRequest,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %ControlInitialize{
+          subtype: :initialize,
+          cwd: "/home/user",
+          systemMessage: "Be concise",
+          model: "claude-opus-4-5",
+          permissionMode: "default"
+        }
+      })
     end
 
     test "controlRequest/interrupt" do
@@ -38,12 +49,16 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
         "reason": "User cancelled"
       }|
 
-      decoded = JSON.decode!(json)
-      struct = ControlRequest.parse(decoded)
-      encoded = JSON.encode!(struct) |> JSON.decode!()
-
-      assert encoded["subtype"] == "interrupt"
-      assert encoded["reason"] == "User cancelled"
+      assert_round_trip(json, %Message{
+        type: :controlRequest,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %ControlInterrupt{
+          subtype: :interrupt,
+          reason: "User cancelled"
+        }
+      })
     end
 
     test "controlRequest/canUseTool" do
@@ -58,13 +73,18 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
         "reason": null
       }|
 
-      decoded = JSON.decode!(json)
-      struct = ControlRequest.parse(decoded)
-      encoded = JSON.encode!(struct) |> JSON.decode!()
-
-      assert encoded["subtype"] == "canUseTool"
-      assert encoded["toolUseId"] == "toolu_123"
-      assert encoded["allowed"] == true
+      assert_round_trip(json, %Message{
+        type: :controlRequest,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %ControlCanUseTool{
+          subtype: :canUseTool,
+          toolUseId: "toolu_123",
+          allowed: true,
+          reason: nil
+        }
+      })
     end
 
     test "controlRequest/setModel" do
@@ -77,12 +97,16 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
         "model": "claude-sonnet-4"
       }|
 
-      decoded = JSON.decode!(json)
-      struct = ControlRequest.parse(decoded)
-      encoded = JSON.encode!(struct) |> JSON.decode!()
-
-      assert encoded["subtype"] == "setModel"
-      assert encoded["model"] == "claude-sonnet-4"
+      assert_round_trip(json, %Message{
+        type: :controlRequest,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %ControlSetModel{
+          subtype: :setModel,
+          model: "claude-sonnet-4"
+        }
+      })
     end
 
     test "controlRequest/mcpStatus" do
@@ -94,11 +118,15 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
         "parent_tool_use_id": null
       }|
 
-      decoded = JSON.decode!(json)
-      struct = ControlRequest.parse(decoded)
-      encoded = JSON.encode!(struct) |> JSON.decode!()
-
-      assert encoded["subtype"] == "mcpStatus"
+      assert_round_trip(json, %Message{
+        type: :controlRequest,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %ControlMcpStatus{
+          subtype: :mcpStatus
+        }
+      })
     end
   end
 end

@@ -3,7 +3,12 @@ defmodule CeCe.Messages.Outbound.SystemTest do
 
   import CeCe.Test.RoundTrip
 
-  alias CeCe.Payload.Outbound.System
+  alias CeCe.Message
+  alias CeCe.Payload.Outbound.SystemInit
+  alias CeCe.Payload.Outbound.SystemStatus
+  alias CeCe.Content.AgentInfo
+  alias CeCe.Content.McpServerStatus
+  alias CeCe.Content.SlashCommand
 
   describe "round-trip" do
     test "system/init" do
@@ -16,9 +21,9 @@ defmodule CeCe.Messages.Outbound.SystemTest do
         "cwd": "/home/user",
         "model": "claude-opus-4-5",
         "tools": ["Bash", "Read"],
-        "agents": [{"name": "Explore", "description": "Explorer agent"}],
-        "slashCommands": ["compact"],
-        "mcpServers": [{"name": "playwright", "status": "connected"}],
+        "agents": [{"name": "Explore", "type": null, "description": "Explorer agent"}],
+        "slashCommands": [{"name": "compact", "description": null, "args": []}],
+        "mcpServers": [{"name": "playwright", "status": "connected", "error": null}],
         "permissionMode": "default",
         "apiKeySource": "env",
         "claudeCodeVersion": "1.0.0",
@@ -27,16 +32,27 @@ defmodule CeCe.Messages.Outbound.SystemTest do
         "plugins": []
       }|
 
-      assert_round_trip(json, System, [
-        "cwd",
-        "model",
-        "tools",
-        "permissionMode",
-        "apiKeySource",
-        "claudeCodeVersion",
-        "outputStyle",
-        "skills"
-      ])
+      assert_round_trip(json, %Message{
+        type: :system,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %SystemInit{
+          subtype: :init,
+          cwd: "/home/user",
+          model: "claude-opus-4-5",
+          tools: ["Bash", "Read"],
+          agents: [%AgentInfo{name: "Explore", type: nil, description: "Explorer agent"}],
+          slashCommands: [%SlashCommand{name: "compact", description: nil, args: []}],
+          mcpServers: [%McpServerStatus{name: "playwright", status: "connected", error: nil}],
+          permissionMode: "default",
+          apiKeySource: "env",
+          claudeCodeVersion: "1.0.0",
+          outputStyle: "default",
+          skills: [],
+          plugins: []
+        }
+      })
     end
 
     test "system/status" do
@@ -51,11 +67,18 @@ defmodule CeCe.Messages.Outbound.SystemTest do
         "details": {}
       }|
 
-      assert_round_trip(json, System, [
-        "status",
-        "message",
-        "details"
-      ])
+      assert_round_trip(json, %Message{
+        type: :system,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %SystemStatus{
+          subtype: :status,
+          status: "running",
+          message: "Processing request",
+          details: %{}
+        }
+      })
     end
   end
 end

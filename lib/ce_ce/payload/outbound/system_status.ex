@@ -8,13 +8,14 @@ defmodule CeCe.Payload.Outbound.SystemStatus do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          subtype: :status,
           status: String.t(),
           message: String.t() | nil,
           details: map()
         }
 
   @derive JSON.Encoder
-  defstruct [:status, :message, :details]
+  defstruct subtype: :status, status: nil, message: nil, details: %{}
 
   @doc "Parse decoded JSON map into struct."
   def parse(json) when is_map(json) do

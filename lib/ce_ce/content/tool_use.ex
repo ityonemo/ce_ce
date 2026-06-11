@@ -8,13 +8,14 @@ defmodule CeCe.Content.ToolUse do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          type: :toolUse,
           id: String.t(),
           name: String.t(),
           input: map()
         }
 
   @derive JSON.Encoder
-  defstruct [:id, :name, :input]
+  defstruct type: :toolUse, id: nil, name: nil, input: %{}
 
   def parse(json) do
     %__MODULE__{

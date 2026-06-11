@@ -1,6 +1,9 @@
 defmodule CeCe.Messages.Inbound.UpdateEnvironmentVariablesTest do
   use ExUnit.Case
 
+  import CeCe.Test.RoundTrip
+
+  alias CeCe.Message
   alias CeCe.Payload.Inbound.UpdateEnvironmentVariables
 
   describe "round-trip" do
@@ -13,12 +16,16 @@ defmodule CeCe.Messages.Inbound.UpdateEnvironmentVariablesTest do
         "variables": {"PATH": "/usr/bin", "HOME": "/home/user"}
       }|
 
-      decoded = JSON.decode!(json)
-      struct = UpdateEnvironmentVariables.parse(decoded)
-      encoded = JSON.encode!(struct) |> JSON.decode!()
-
-      assert encoded["type"] == "updateEnvironmentVariables"
-      assert encoded["variables"] == %{"PATH" => "/usr/bin", "HOME" => "/home/user"}
+      assert_round_trip(json, %Message{
+        type: :updateEnvironmentVariables,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %UpdateEnvironmentVariables{
+          type: :updateEnvironmentVariables,
+          variables: %{"PATH" => "/usr/bin", "HOME" => "/home/user"}
+        }
+      })
     end
   end
 end

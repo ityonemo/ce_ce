@@ -19,7 +19,6 @@ defmodule CeCe.Payload.Outbound.Assistant do
           usage: Usage.t() | nil
         }
 
-  @derive JSON.Encoder
   defstruct [
     :model,
     :messageId,
@@ -48,5 +47,39 @@ defmodule CeCe.Payload.Outbound.Assistant do
   defp parse_content_block!(block) do
     type = Map.fetch!(block, "type")
     Map.fetch!(@content_types, type).parse(block)
+  end
+end
+
+defimpl JSON.Encoder, for: CeCe.Payload.Outbound.Assistant do
+  def encode(assistant, encoder) do
+    # Encode content blocks
+    content =
+      assistant.content
+      |> Enum.map(fn block ->
+        block
+        |> JSON.encode!()
+        |> JSON.decode!()
+      end)
+
+    # Encode usage if present
+    usage =
+      if assistant.usage do
+        assistant.usage
+        |> JSON.encode!()
+        |> JSON.decode!()
+      else
+        nil
+      end
+
+    %{
+      "message" => %{
+        "model" => assistant.model,
+        "id" => assistant.messageId,
+        "content" => content,
+        "stopReason" => assistant.stopReason,
+        "usage" => usage
+      }
+    }
+    |> JSON.Encoder.Map.encode(encoder)
   end
 end

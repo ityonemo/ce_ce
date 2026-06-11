@@ -6,11 +6,12 @@ defmodule CeCe.Content.Text do
   use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          type: :text,
           text: String.t()
         }
 
   @derive JSON.Encoder
-  defstruct [:text]
+  defstruct type: :text, text: nil
 
   def parse(json) do
     %__MODULE__{

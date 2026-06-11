@@ -1,7 +1,13 @@
 defmodule CeCe.Messages.Outbound.AssistantTest do
   use ExUnit.Case
 
+  import CeCe.Test.RoundTrip
+
+  alias CeCe.Message
   alias CeCe.Payload.Outbound.Assistant
+  alias CeCe.Content.Text
+  alias CeCe.Content.ToolUse
+  alias CeCe.Content.Usage
 
   describe "round-trip" do
     test "assistant with text content" do
@@ -19,21 +25,31 @@ defmodule CeCe.Messages.Outbound.AssistantTest do
           "stopReason": "end_turn",
           "usage": {
             "inputTokens": 100,
-            "outputTokens": 50
+            "outputTokens": 50,
+            "cacheCreationInputTokens": null,
+            "cacheReadInputTokens": null
           }
         }
       }|
 
-      decoded = JSON.decode!(json)
-      struct = Assistant.parse(decoded)
-      encoded = JSON.encode!(struct) |> JSON.decode!()
-
-      assert encoded["model"] == "claude-opus-4-5"
-      assert encoded["messageId"] == "msg_123"
-      assert encoded["stopReason"] == "end_turn"
-      assert [%{"text" => "Hello!"}] = encoded["content"]
-      assert encoded["usage"]["inputTokens"] == 100
-      assert encoded["usage"]["outputTokens"] == 50
+      assert_round_trip(json, %Message{
+        type: :assistant,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %Assistant{
+          model: "claude-opus-4-5",
+          messageId: "msg_123",
+          content: [%Text{type: :text, text: "Hello!"}],
+          stopReason: "end_turn",
+          usage: %Usage{
+            inputTokens: 100,
+            outputTokens: 50,
+            cacheCreationInputTokens: nil,
+            cacheReadInputTokens: nil
+          }
+        }
+      })
     end
 
     test "assistant with toolUse content" do
@@ -58,14 +74,26 @@ defmodule CeCe.Messages.Outbound.AssistantTest do
         }
       }|
 
-      decoded = JSON.decode!(json)
-      struct = Assistant.parse(decoded)
-      encoded = JSON.encode!(struct) |> JSON.decode!()
-
-      assert [tool_use] = encoded["content"]
-      assert tool_use["id"] == "toolu_123"
-      assert tool_use["name"] == "Bash"
-      assert tool_use["input"] == %{"command" => "ls -la"}
+      assert_round_trip(json, %Message{
+        type: :assistant,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %Assistant{
+          model: "claude-opus-4-5",
+          messageId: "msg_123",
+          content: [
+            %ToolUse{
+              type: :toolUse,
+              id: "toolu_123",
+              name: "Bash",
+              input: %{"command" => "ls -la"}
+            }
+          ],
+          stopReason: nil,
+          usage: nil
+        }
+      })
     end
   end
 end

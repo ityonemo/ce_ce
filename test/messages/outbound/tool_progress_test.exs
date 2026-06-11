@@ -3,6 +3,7 @@ defmodule CeCe.Messages.Outbound.ToolProgressTest do
 
   import CeCe.Test.RoundTrip
 
+  alias CeCe.Message
   alias CeCe.Payload.Outbound.ToolProgress
 
   describe "round-trip" do
@@ -19,13 +20,19 @@ defmodule CeCe.Messages.Outbound.ToolProgressTest do
         "content": null
       }|
 
-      assert_round_trip(json, ToolProgress, [
-        "toolUseId",
-        "toolName",
-        "progress",
-        "message",
-        "content"
-      ])
+      assert_round_trip(json, %Message{
+        type: :toolProgress,
+        session_id: "abc-123",
+        uuid: "def-456",
+        parent_tool_use_id: nil,
+        payload: %ToolProgress{
+          toolUseId: "toolu_123",
+          toolName: "Bash",
+          progress: 0.5,
+          message: "Running command...",
+          content: nil
+        }
+      })
     end
   end
 end

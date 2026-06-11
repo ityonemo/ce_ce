@@ -96,7 +96,7 @@ defmodule CeCe.Message do
       type: parse_type!(json),
       session_id: Map.fetch!(json, "session_id"),
       uuid: Map.fetch!(json, "uuid"),
-      parent_tool_use_id: Map.fetch!(json, "parent_tool_use_id"),
+      parent_tool_use_id: Map.get(json, "parent_tool_use_id"),
       payload: parse_payload!(json)
     }
   end
@@ -135,5 +135,27 @@ defmodule CeCe.Message do
 
   defp parse_payload!(%{"type" => type} = json) do
     Map.fetch!(@payload_map, type).parse(json)
+  end
+end
+
+defimpl JSON.Encoder, for: CeCe.Message do
+  def encode(message, encoder) do
+    # Encode payload to get its fields
+    payload_json =
+      message.payload
+      |> JSON.encode!()
+      |> JSON.decode!()
+
+    # Merge with top-level message fields
+    map =
+      %{
+        "type" => Atom.to_string(message.type),
+        "session_id" => message.session_id,
+        "uuid" => message.uuid,
+        "parent_tool_use_id" => message.parent_tool_use_id
+      }
+      |> Map.merge(payload_json)
+
+    JSON.Encoder.Map.encode(map, encoder)
   end
 end

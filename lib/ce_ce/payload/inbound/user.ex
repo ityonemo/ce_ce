@@ -21,7 +21,6 @@ defmodule CeCe.Payload.Inbound.User do
           timestamp: String.t() | nil
         }
 
-  @derive JSON.Encoder
   defstruct type: :user,
             content: [],
             toolUseResult: nil,
@@ -52,5 +51,33 @@ defmodule CeCe.Payload.Inbound.User do
       interrupted: Map.get(result, "interrupted", false),
       isImage: Map.get(result, "isImage", false)
     }
+  end
+end
+
+defimpl JSON.Encoder, for: CeCe.Payload.Inbound.User do
+  def encode(user, encoder) do
+    tool_use_result =
+      if user.toolUseResult do
+        %{
+          "stdout" => user.toolUseResult.stdout,
+          "stderr" => user.toolUseResult.stderr,
+          "interrupted" => user.toolUseResult.interrupted,
+          "isImage" => user.toolUseResult.isImage
+        }
+      else
+        nil
+      end
+
+    %{
+      "message" => %{
+        "role" => "user",
+        "content" => user.content
+      },
+      "toolUseResult" => tool_use_result,
+      "isReplay" => user.isReplay,
+      "priority" => user.priority,
+      "timestamp" => user.timestamp
+    }
+    |> JSON.Encoder.Map.encode(encoder)
   end
 end
