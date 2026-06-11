@@ -5,30 +5,23 @@ defmodule CeCe.Content.ToolUse do
   Represents Claude's request to invoke a tool.
   """
 
-  @behaviour Access
+  use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          type: :toolUse,
           id: String.t(),
           name: String.t(),
           input: map()
         }
 
-  defstruct [:id, :name, :input]
-
-  @impl Access
-  def fetch(struct, key), do: Map.fetch(struct, key)
-
-  @impl Access
-  def get_and_update(_, _, _), do: raise("CeCe.Content.ToolUse is read-only")
-
-  @impl Access
-  def pop(_, _), do: raise("CeCe.Content.ToolUse is read-only")
+  @derive JSON.Encoder
+  defstruct type: :toolUse, id: nil, name: nil, input: %{}
 
   def parse(json) do
     %__MODULE__{
-      id: json["id"],
-      name: json["name"],
-      input: json["input"] || %{}
+      id: Map.fetch!(json, "id"),
+      name: Map.fetch!(json, "name"),
+      input: Map.fetch!(json, "input")
     }
   end
 end

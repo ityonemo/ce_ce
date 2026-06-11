@@ -8,16 +8,17 @@ defmodule CeCeTest do
         "subtype" => "init",
         "session_id" => "abc-123",
         "uuid" => "def-456",
+        "parent_tool_use_id" => nil,
         "cwd" => "/home/user",
         "model" => "claude-opus-4-5",
         "tools" => ["Bash", "Read"],
         "agents" => ["Explore"],
-        "slash_commands" => ["compact"],
-        "mcp_servers" => [%{"name" => "playwright", "status" => "connected"}],
+        "slashCommands" => ["compact"],
+        "mcpServers" => [%{"name" => "playwright", "status" => "connected"}],
         "permissionMode" => "default",
         "apiKeySource" => "env",
-        "claude_code_version" => "1.0.0",
-        "output_style" => "default",
+        "claudeCodeVersion" => "1.0.0",
+        "outputStyle" => "default",
         "skills" => [],
         "plugins" => []
       }
@@ -27,7 +28,7 @@ defmodule CeCeTest do
       assert message.type == :system
       assert message.session_id == "abc-123"
       assert message.uuid == "def-456"
-      assert message.payload.subtype == :init
+      assert %CeCe.Payload.Outbound.SystemInit{} = message.payload
       assert message.payload.cwd == "/home/user"
       assert message.payload.model == "claude-opus-4-5"
       assert message.payload.tools == ["Bash", "Read"]
@@ -45,10 +46,10 @@ defmodule CeCeTest do
           "content" => [
             %{"type" => "text", "text" => "Hello!"}
           ],
-          "stop_reason" => "end_turn",
+          "stopReason" => "end_turn",
           "usage" => %{
-            "input_tokens" => 100,
-            "output_tokens" => 50
+            "inputTokens" => 100,
+            "outputTokens" => 50
           }
         }
       }
@@ -56,12 +57,12 @@ defmodule CeCeTest do
       message = CeCe.Message.parse(json)
 
       assert message.type == :assistant
-      assert message.payload.message_id == "msg_123"
+      assert message.payload.messageId == "msg_123"
       assert [%CeCe.Content.Text{text: "Hello!"}] = message.payload.content
-      assert message.payload.stop_reason == "end_turn"
+      assert message.payload.stopReason == "end_turn"
     end
 
-    test "parses assistant message with tool_use content" do
+    test "parses assistant message with toolUse content" do
       json = %{
         "type" => "assistant",
         "session_id" => "abc-123",
@@ -72,13 +73,13 @@ defmodule CeCeTest do
           "id" => "msg_123",
           "content" => [
             %{
-              "type" => "tool_use",
+              "type" => "toolUse",
               "id" => "toolu_123",
               "name" => "Bash",
               "input" => %{"command" => "ls -la"}
             }
           ],
-          "stop_reason" => nil,
+          "stopReason" => nil,
           "usage" => nil
         }
       }
@@ -93,7 +94,7 @@ defmodule CeCeTest do
       assert tool_use.input == %{"command" => "ls -la"}
     end
 
-    test "parses user/tool_result message" do
+    test "parses user/toolResult message" do
       json = %{
         "type" => "user",
         "session_id" => "abc-123",
@@ -103,13 +104,13 @@ defmodule CeCeTest do
           "role" => "user",
           "content" => [
             %{
-              "tool_use_id" => "toolu_123",
-              "type" => "tool_result",
+              "toolUseId" => "toolu_123",
+              "type" => "toolResult",
               "content" => "file1.txt\nfile2.txt"
             }
           ]
         },
-        "tool_use_result" => %{
+        "toolUseResult" => %{
           "stdout" => "file1.txt\nfile2.txt",
           "stderr" => "",
           "interrupted" => false,
@@ -120,10 +121,10 @@ defmodule CeCeTest do
       message = CeCe.Message.parse(json)
 
       assert message.type == :user
-      assert message.payload.tool_use_result.stdout == "file1.txt\nfile2.txt"
-      assert message.payload.tool_use_result.stderr == ""
-      assert message.payload.tool_use_result.interrupted == false
-      assert message.payload.tool_use_result.is_image == false
+      assert message.payload.toolUseResult.stdout == "file1.txt\nfile2.txt"
+      assert message.payload.toolUseResult.stderr == ""
+      assert message.payload.toolUseResult.interrupted == false
+      assert message.payload.toolUseResult.isImage == false
     end
   end
 end

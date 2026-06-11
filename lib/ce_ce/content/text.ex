@@ -3,26 +3,19 @@ defmodule CeCe.Content.Text do
   Text content block from an assistant message.
   """
 
-  @behaviour Access
+  use CeCe.AccessFunctions
 
   @type t :: %__MODULE__{
+          type: :text,
           text: String.t()
         }
 
-  defstruct [:text]
-
-  @impl Access
-  def fetch(struct, key), do: Map.fetch(struct, key)
-
-  @impl Access
-  def get_and_update(_, _, _), do: raise("CeCe.Content.Text is read-only")
-
-  @impl Access
-  def pop(_, _), do: raise("CeCe.Content.Text is read-only")
+  @derive JSON.Encoder
+  defstruct type: :text, text: nil
 
   def parse(json) do
     %__MODULE__{
-      text: json["text"]
+      text: Map.fetch!(json, "text")
     }
   end
 end
