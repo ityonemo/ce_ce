@@ -73,7 +73,7 @@ defmodule CeCe do
     ProtonStream.start_link(
       __MODULE__,
       "claude",
-      ~w[--continue --output-format stream-json --input-format stream-json --verbose] ++
+      ~w[--continue --output-format stream-json --input-format stream-json --print --verbose] ++
         system_prompt(opts),
       {module, handler},
       [cd: cwd] ++ genserver_opts
