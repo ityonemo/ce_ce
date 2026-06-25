@@ -24,6 +24,8 @@ defmodule CeCe.Payload do
   - `:transcript_mirror` - Transcript mirror batches
   """
 
+  require Logger
+
   alias CeCe.Payload.User
   alias CeCe.Payload.Assistant
   alias CeCe.Payload.System
@@ -33,6 +35,8 @@ defmodule CeCe.Payload do
   alias CeCe.Payload.ControlCancelRequest
   alias CeCe.Payload.KeepAlive
   alias CeCe.Payload.TranscriptMirror
+  alias CeCe.Payload.RateLimitEvent
+  alias CeCe.Payload.Unknown
 
   @type input() ::
           User.t()
@@ -51,6 +55,8 @@ defmodule CeCe.Payload do
           | ControlCancelRequest.t()
           | KeepAlive.t()
           | TranscriptMirror.t()
+          | RateLimitEvent.t()
+          | Unknown.t()
 
   @type t() :: input() | output()
 
@@ -65,12 +71,20 @@ defmodule CeCe.Payload do
     "control_response" => ControlResponse,
     "control_cancel_request" => ControlCancelRequest,
     "keep_alive" => KeepAlive,
-    "transcript_mirror" => TranscriptMirror
+    "transcript_mirror" => TranscriptMirror,
+    "rate_limit_event" => RateLimitEvent
   }
 
   @spec parse(json) :: t
   def parse(%{"type" => type} = json) do
-    Map.fetch!(@payload_map, type).parse(json)
+    case Map.fetch(@payload_map, type) do
+      {:ok, module} ->
+        module.parse(json)
+
+      :error ->
+        Logger.warning("CeCe.Payload: unknown message type #{inspect(type)}; routing to Unknown")
+        Unknown.parse(json)
+    end
   end
 
   def _encode_json_merging(struct, extra_field, encoder) do
