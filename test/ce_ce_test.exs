@@ -1,7 +1,7 @@
 defmodule CeCeTest do
   use ExUnit.Case
 
-  describe "CeCe.Message.parse/1" do
+  describe "CeCe.Payload.parse/1" do
     test "parses system/init message" do
       json = %{
         "type" => "system",
@@ -11,27 +11,19 @@ defmodule CeCeTest do
         "parent_tool_use_id" => nil,
         "cwd" => "/home/user",
         "model" => "claude-opus-4-5",
-        "tools" => ["Bash", "Read"],
-        "agents" => ["Explore"],
-        "slash_commands" => ["compact"],
-        "mcp_servers" => [%{"name" => "playwright", "status" => "connected"}],
-        "permissionMode" => "default",
-        "apiKeySource" => "env",
-        "claude_code_version" => "1.0.0",
-        "output_style" => "default",
-        "skills" => [],
-        "plugins" => []
+        "tools" => ["Bash", "Read"]
       }
 
-      message = CeCe.Message.parse(json)
+      message = CeCe.Payload.parse(json)
 
+      assert %CeCe.Payload.System{} = message
       assert message.type == :system
+      assert message.subtype == "init"
       assert message.session_id == "abc-123"
       assert message.uuid == "def-456"
-      assert %CeCe.Payload.Outbound.SystemInit{} = message.payload
-      assert message.payload.cwd == "/home/user"
-      assert message.payload.model == "claude-opus-4-5"
-      assert message.payload.tools == ["Bash", "Read"]
+      assert message.data["cwd"] == "/home/user"
+      assert message.data["model"] == "claude-opus-4-5"
+      assert message.data["tools"] == ["Bash", "Read"]
     end
 
     test "parses assistant message with text content" do
@@ -41,60 +33,68 @@ defmodule CeCeTest do
         "uuid" => "def-456",
         "parent_tool_use_id" => nil,
         "message" => %{
+          "role" => "assistant",
           "model" => "claude-opus-4-5",
           "id" => "msg_123",
           "content" => [
             %{"type" => "text", "text" => "Hello!"}
           ],
-          "stopReason" => "end_turn",
+          "stop_reason" => "end_turn",
           "usage" => %{
-            "inputTokens" => 100,
-            "outputTokens" => 50
+            "input_tokens" => 100,
+            "output_tokens" => 50
           }
         }
       }
 
-      message = CeCe.Message.parse(json)
+      message = CeCe.Payload.parse(json)
 
+      assert %CeCe.Payload.Assistant{} = message
       assert message.type == :assistant
-      assert message.payload.messageId == "msg_123"
-      assert [%CeCe.Content.Text{text: "Hello!"}] = message.payload.content
-      assert message.payload.stopReason == "end_turn"
+      assert %CeCe.Payload.Assistant.Message{} = message.message
+      assert message.message.id == "msg_123"
+      assert [%CeCe.Payload.Common.TextContent{text: "Hello!"}] = message.message.content
+      assert message.message.stop_reason == "end_turn"
     end
 
-    test "parses assistant message with toolUse content" do
+    test "parses assistant message with tool_use content" do
       json = %{
         "type" => "assistant",
         "session_id" => "abc-123",
         "uuid" => "def-456",
         "parent_tool_use_id" => nil,
         "message" => %{
+          "role" => "assistant",
           "model" => "claude-opus-4-5",
           "id" => "msg_123",
           "content" => [
             %{
-              "type" => "toolUse",
+              "type" => "tool_use",
               "id" => "toolu_123",
               "name" => "Bash",
               "input" => %{"command" => "ls -la"}
             }
           ],
-          "stopReason" => nil,
+          "stop_reason" => nil,
           "usage" => nil
         }
       }
 
-      message = CeCe.Message.parse(json)
+      message = CeCe.Payload.parse(json)
 
-      assert message.type == :assistant
-      assert [tool_use] = message.payload.content
-      assert %CeCe.Content.ToolUse{} = tool_use
-      assert tool_use.id == "toolu_123"
-      assert tool_use.name == "Bash"
-      assert tool_use.input == %{"command" => "ls -la"}
+      assert %CeCe.Payload.Assistant{} = message
+
+      assert [
+               %CeCe.Payload.Assistant.ToolUseContent{
+                 id: "toolu_123",
+                 name: "Bash",
+                 input: %{"command" => "ls -la"}
+               }
+             ] =
+               message.message.content
     end
 
-    test "parses user/toolResult message" do
+    test "parses user/tool_result message" do
       json = %{
         "type" => "user",
         "session_id" => "abc-123",
@@ -104,27 +104,26 @@ defmodule CeCeTest do
           "role" => "user",
           "content" => [
             %{
-              "toolUseId" => "toolu_123",
-              "type" => "toolResult",
+              "tool_use_id" => "toolu_123",
+              "type" => "tool_result",
               "content" => "file1.txt\nfile2.txt"
             }
           ]
-        },
-        "toolUseResult" => %{
-          "stdout" => "file1.txt\nfile2.txt",
-          "stderr" => "",
-          "interrupted" => false,
-          "isImage" => false
         }
       }
 
-      message = CeCe.Message.parse(json)
+      message = CeCe.Payload.parse(json)
 
-      assert message.type == :user
-      assert message.payload.toolUseResult.stdout == "file1.txt\nfile2.txt"
-      assert message.payload.toolUseResult.stderr == ""
-      assert message.payload.toolUseResult.interrupted == false
-      assert message.payload.toolUseResult.isImage == false
+      assert %CeCe.Payload.User{} = message
+      assert %CeCe.Payload.User.Message{} = message.message
+
+      assert [
+               %CeCe.Payload.User.ToolResultContent{
+                 tool_use_id: "toolu_123",
+                 content: "file1.txt\nfile2.txt"
+               }
+             ] =
+               message.message.content
     end
   end
 end

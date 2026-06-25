@@ -3,11 +3,10 @@ defmodule CeCe.Messages.Outbound.KeepAliveTest do
 
   import CeCe.Test.RoundTrip
 
-  alias CeCe.Message
-  alias CeCe.Payload.Outbound.KeepAlive
+  alias CeCe.Payload.KeepAlive
 
   describe "round-trip" do
-    test "keepAlive" do
+    test "keep_alive" do
       json = ~s|{
         "type": "keep_alive",
         "session_id": "abc-123",
@@ -16,14 +15,11 @@ defmodule CeCe.Messages.Outbound.KeepAliveTest do
         "timestamp": "2024-01-01T00:00:00Z"
       }|
 
-      assert_round_trip(json, %Message{
-        type: :keep_alive,
+      assert_round_trip(json, %KeepAlive{
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
-        payload: %KeepAlive{
-          timestamp: "2024-01-01T00:00:00Z"
-        }
+        timestamp: "2024-01-01T00:00:00Z"
       })
     end
   end

@@ -42,7 +42,7 @@ defmodule Mix.Tasks.Claude do
 
   defp loop(pid, stdin_reader, eof_received) do
     receive do
-      %CeCe.Message{} = message ->
+      message when is_struct(message) ->
         IO.puts(inspect(message, pretty: true, limit: :infinity))
         loop(pid, stdin_reader, eof_received)
 

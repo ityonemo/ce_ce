@@ -5,7 +5,7 @@ defmodule CeCe.Test.RoundTrip do
 
   import ExUnit.Assertions
 
-  alias CeCe.Message
+  alias CeCe.Payload
 
   @doc """
   Assert that specified fields survive the JSON round-trip.
@@ -15,7 +15,7 @@ defmodule CeCe.Test.RoundTrip do
   """
   def assert_round_trip(json_string, reified) do
     decoded = JSON.decode!(json_string)
-    assert reified == Message.parse(decoded)
+    assert reified == Payload.parse(decoded)
     assert decoded == reified |> JSON.encode!() |> JSON.decode!()
   end
 end

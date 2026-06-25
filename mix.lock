@@ -1,5 +1,6 @@
 %{
   "elixir_make": {:hex, :elixir_make, "0.9.0", "6484b3cd8c0cee58f09f05ecaf1a140a8c97670671a6a0e7ab4dc326c3109726", [:mix], [], "hexpm", "db23d4fd8b757462ad02f8aa73431a426fe6671c80b200d9710caf3d1dd0ffdb"},
   "proton_stream": {:hex, :proton_stream, "1.8.2", "c5bfdfa5ae59c4367a8c5d59d67c33bfb460e2480ed743218b0d05585fcddeb8", [:make, :mix], [{:elixir_make, "~> 0.6", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm", "45d47a06e7ed80eeff436e2f983dc291cf3ca92f300629f322caa477ce12266e"},
+  "protoss": {:hex, :protoss, "1.1.0", "853533313989751c7da5b0e1ce71501a23f3dc41f128709478af40daccc6e959", [:mix], [], "hexpm", "c2f874383dd047fcfdf467b814dd33a208a4d24a467aef90d86185b41a0752ad"},
   "telemetry": {:hex, :telemetry, "1.4.2", "a0cb522801dffb1c49fe6e30561badffc7b6d0e180db1300df759faa22062855", [:rebar3], [], "hexpm", "928f6495066506077862c0d1646609eed891a4326bee3126ba54b60af61febb1"},
 }

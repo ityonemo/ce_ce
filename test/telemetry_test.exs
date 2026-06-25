@@ -33,7 +33,7 @@ defmodule CeCe.TelemetryTest do
   end
 
   test "emits the raw map even when the message type is unknown (parse would crash)" do
-    # An unknown type makes CeCe.Message.parse/1 raise; the telemetry event must
+    # An unknown type makes CeCe.Payload.parse/1 raise; the telemetry event must
     # still have fired with the raw payload (it is emitted before parse).
     json = ~s|{"type":"some_future_type","session_id":"s","uuid":"u"}|
     state = %CeCe{state: self(), module: CeCe, buffer: ""}

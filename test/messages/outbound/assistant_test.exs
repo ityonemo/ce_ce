@@ -3,11 +3,10 @@ defmodule CeCe.Messages.Outbound.AssistantTest do
 
   import CeCe.Test.RoundTrip
 
-  alias CeCe.Message
-  alias CeCe.Payload.Outbound.Assistant
-  alias CeCe.Content.Text
-  alias CeCe.Content.ToolUse
-  alias CeCe.Content.Usage
+  alias CeCe.Payload.Assistant
+  alias CeCe.Payload.Assistant.Message
+  alias CeCe.Payload.Common.TextContent
+  alias CeCe.Payload.Assistant.ToolUseContent
 
   describe "round-trip" do
     test "assistant with text content" do
@@ -16,81 +15,84 @@ defmodule CeCe.Messages.Outbound.AssistantTest do
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
+        "timestamp": null,
         "message": {
+          "role": "assistant",
           "model": "claude-opus-4-5",
           "id": "msg_123",
           "content": [
             {"type": "text", "text": "Hello!"}
           ],
-          "stopReason": "end_turn",
+          "stop_reason": "end_turn",
+          "stop_sequence": null,
           "usage": {
-            "inputTokens": 100,
-            "outputTokens": 50,
-            "cacheCreationInputTokens": null,
-            "cacheReadInputTokens": null
+            "input_tokens": 100,
+            "output_tokens": 50,
+            "cache_creation_input_tokens": null,
+            "cache_read_input_tokens": null
           }
         }
       }|
 
-      assert_round_trip(json, %Message{
-        type: :assistant,
+      assert_round_trip(json, %Assistant{
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
-        payload: %Assistant{
+        timestamp: nil,
+        message: %Message{
+          id: "msg_123",
           model: "claude-opus-4-5",
-          messageId: "msg_123",
-          content: [%Text{type: :text, text: "Hello!"}],
-          stopReason: "end_turn",
-          usage: %Usage{
-            inputTokens: 100,
-            outputTokens: 50,
-            cacheCreationInputTokens: nil,
-            cacheReadInputTokens: nil
+          content: [%TextContent{text: "Hello!"}],
+          stop_reason: "end_turn",
+          stop_sequence: nil,
+          usage: %{
+            "input_tokens" => 100,
+            "output_tokens" => 50,
+            "cache_creation_input_tokens" => nil,
+            "cache_read_input_tokens" => nil
           }
         }
       })
     end
 
-    test "assistant with toolUse content" do
+    test "assistant with tool_use content" do
       json = ~s|{
         "type": "assistant",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
+        "timestamp": null,
         "message": {
+          "role": "assistant",
           "model": "claude-opus-4-5",
           "id": "msg_123",
           "content": [
             {
-              "type": "toolUse",
+              "type": "tool_use",
               "id": "toolu_123",
               "name": "Bash",
               "input": {"command": "ls -la"}
             }
           ],
-          "stopReason": null,
+          "stop_reason": null,
+          "stop_sequence": null,
           "usage": null
         }
       }|
 
-      assert_round_trip(json, %Message{
-        type: :assistant,
+      assert_round_trip(json, %Assistant{
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
-        payload: %Assistant{
+        timestamp: nil,
+        message: %Message{
+          id: "msg_123",
           model: "claude-opus-4-5",
-          messageId: "msg_123",
           content: [
-            %ToolUse{
-              type: :toolUse,
-              id: "toolu_123",
-              name: "Bash",
-              input: %{"command" => "ls -la"}
-            }
+            %ToolUseContent{id: "toolu_123", name: "Bash", input: %{"command" => "ls -la"}}
           ],
-          stopReason: nil,
+          stop_reason: nil,
+          stop_sequence: nil,
           usage: nil
         }
       })
