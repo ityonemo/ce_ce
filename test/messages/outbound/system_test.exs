@@ -3,12 +3,7 @@ defmodule CeCe.Messages.Outbound.SystemTest do
 
   import CeCe.Test.RoundTrip
 
-  alias CeCe.Message
-  alias CeCe.Payload.Outbound.SystemInit
-  alias CeCe.Payload.Outbound.SystemStatus
-  alias CeCe.Content.AgentInfo
-  alias CeCe.Content.McpServerStatus
-  alias CeCe.Content.SlashCommand
+  alias CeCe.Payload.System
 
   describe "round-trip" do
     test "system/init" do
@@ -17,40 +12,23 @@ defmodule CeCe.Messages.Outbound.SystemTest do
         "subtype": "init",
         "session_id": "abc-123",
         "uuid": "def-456",
-        "parent_tool_use_id": null,
+        "error": null,
+        "key": null,
         "cwd": "/home/user",
         "model": "claude-opus-4-5",
-        "tools": ["Bash", "Read"],
-        "agents": [{"name": "Explore", "type": null, "description": "Explorer agent"}],
-        "slashCommands": [{"name": "compact", "description": null, "args": []}],
-        "mcpServers": [{"name": "playwright", "status": "connected", "error": null}],
-        "permissionMode": "default",
-        "apiKeySource": "env",
-        "claudeCodeVersion": "1.0.0",
-        "outputStyle": "default",
-        "skills": [],
-        "plugins": []
+        "tools": ["Bash", "Read"]
       }|
 
-      assert_round_trip(json, %Message{
-        type: :system,
+      assert_round_trip(json, %System{
+        subtype: "init",
         session_id: "abc-123",
         uuid: "def-456",
-        parent_tool_use_id: nil,
-        payload: %SystemInit{
-          subtype: :init,
-          cwd: "/home/user",
-          model: "claude-opus-4-5",
-          tools: ["Bash", "Read"],
-          agents: [%AgentInfo{name: "Explore", type: nil, description: "Explorer agent"}],
-          slashCommands: [%SlashCommand{name: "compact", description: nil, args: []}],
-          mcpServers: [%McpServerStatus{name: "playwright", status: "connected", error: nil}],
-          permissionMode: "default",
-          apiKeySource: "env",
-          claudeCodeVersion: "1.0.0",
-          outputStyle: "default",
-          skills: [],
-          plugins: []
+        error: nil,
+        key: nil,
+        data: %{
+          "cwd" => "/home/user",
+          "model" => "claude-opus-4-5",
+          "tools" => ["Bash", "Read"]
         }
       })
     end
@@ -61,22 +39,23 @@ defmodule CeCe.Messages.Outbound.SystemTest do
         "subtype": "status",
         "session_id": "abc-123",
         "uuid": "def-456",
-        "parent_tool_use_id": null,
+        "error": null,
+        "key": null,
         "status": "running",
         "message": "Processing request",
         "details": {}
       }|
 
-      assert_round_trip(json, %Message{
-        type: :system,
+      assert_round_trip(json, %System{
+        subtype: "status",
         session_id: "abc-123",
         uuid: "def-456",
-        parent_tool_use_id: nil,
-        payload: %SystemStatus{
-          subtype: :status,
-          status: "running",
-          message: "Processing request",
-          details: %{}
+        error: nil,
+        key: nil,
+        data: %{
+          "status" => "running",
+          "message" => "Processing request",
+          "details" => %{}
         }
       })
     end

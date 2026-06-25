@@ -3,10 +3,7 @@ defmodule CeCe.Messages.Outbound.ResultTest do
 
   import CeCe.Test.RoundTrip
 
-  alias CeCe.Message
-  alias CeCe.Payload.Outbound.Result
-  alias CeCe.Content.Usage
-  alias CeCe.Content.ModelUsage
+  alias CeCe.Payload.Result
 
   describe "round-trip" do
     test "result" do
@@ -14,65 +11,38 @@ defmodule CeCe.Messages.Outbound.ResultTest do
         "type": "result",
         "session_id": "abc-123",
         "uuid": "def-456",
-        "parent_tool_use_id": null,
         "result": "success",
         "subtype": "success",
-        "costUsd": 0.05,
-        "durationMs": 1500,
-        "durationApiMs": 1200,
-        "isError": false,
-        "numTurns": 3,
-        "sessionId": null,
-        "totalCostUsd": null,
-        "permissionDenials": [],
+        "errors": null,
+        "duration_ms": 1500,
+        "duration_api_ms": 1200,
+        "is_error": false,
+        "num_turns": 3,
+        "total_cost_usd": null,
         "usage": {
-          "inputTokens": 500,
-          "outputTokens": 200,
-          "cacheCreationInputTokens": null,
-          "cacheReadInputTokens": null
-        },
-        "modelUsage": [
-          {"model": "claude-opus-4-5", "usage": {"inputTokens": 500, "outputTokens": 200, "cacheCreationInputTokens": null, "cacheReadInputTokens": null}}
-        ],
-        "stopReason": null,
-        "structuredOutput": null
+          "input_tokens": 500,
+          "output_tokens": 200,
+          "cache_creation_input_tokens": null,
+          "cache_read_input_tokens": null
+        }
       }|
 
-      assert_round_trip(json, %Message{
-        type: :result,
+      assert_round_trip(json, %Result{
         session_id: "abc-123",
         uuid: "def-456",
-        parent_tool_use_id: nil,
-        payload: %Result{
-          subtype: :success,
-          costUsd: 0.05,
-          durationMs: 1500,
-          durationApiMs: 1200,
-          isError: false,
-          numTurns: 3,
-          sessionId: nil,
-          totalCostUsd: nil,
-          permissionDenials: [],
-          usage: %Usage{
-            inputTokens: 500,
-            outputTokens: 200,
-            cacheCreationInputTokens: nil,
-            cacheReadInputTokens: nil
-          },
-          modelUsage: [
-            %ModelUsage{
-              model: "claude-opus-4-5",
-              usage: %Usage{
-                inputTokens: 500,
-                outputTokens: 200,
-                cacheCreationInputTokens: nil,
-                cacheReadInputTokens: nil
-              }
-            }
-          ],
-          stopReason: nil,
-          result: "success",
-          structuredOutput: nil
+        result: "success",
+        subtype: "success",
+        errors: nil,
+        duration_ms: 1500,
+        duration_api_ms: 1200,
+        is_error: false,
+        num_turns: 3,
+        total_cost_usd: nil,
+        usage: %{
+          "input_tokens" => 500,
+          "output_tokens" => 200,
+          "cache_creation_input_tokens" => nil,
+          "cache_read_input_tokens" => nil
         }
       })
     end

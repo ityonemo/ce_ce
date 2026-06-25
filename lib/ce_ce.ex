@@ -11,11 +11,11 @@ defmodule CeCe do
       CeCe.send_prompt(pid, "Hello, Claude!")
 
       receive do
-        %CeCe.Message{type: :assistant, payload: payload} ->
-          IO.inspect(payload.content)
+        %CeCe.Payload.Assistant{message: message} ->
+          IO.inspect(message.content)
       end
 
-  The handler PID receives `%CeCe.Message{}` structs and `{:cece_stderr, binary}` tuples.
+  The handler PID receives `CeCe.Payload.t()` structs and `{:cece_stderr, binary}` tuples.
 
   ## Callback Module Mode
 
@@ -49,7 +49,7 @@ defmodule CeCe do
 
   # Behaviour callbacks for user modules.
 
-  @callback handle_message(message :: CeCe.Message.t(), state :: term()) ::
+  @callback handle_message(message :: CeCe.Payload.t(), state :: term()) ::
               {:noreply, state :: term()}
               | {:noreply, state :: term(), timeout() | :hibernate | {:continue, term()}}
               | {:stop, reason :: term(), state :: term()}
@@ -224,7 +224,16 @@ defmodule CeCe do
   defp parse_json(json_string) do
     case JSON.decode(json_string) do
       {:ok, map} when is_map(map) ->
-        {:ok, CeCe.Message.parse(map)}
+        # Emit telemetry with the raw decoded map BEFORE parsing, so every
+        # inbound message is observable even if CeCe.Payload.parse/1 raises
+        # (e.g. an unknown type or a key the schema renamed).
+        :telemetry.execute(
+          [:ce_ce, :message, :received],
+          %{system_time: System.system_time()},
+          %{raw: map, json: json_string}
+        )
+
+        {:ok, CeCe.Payload.parse(map)}
 
       {:error, _} ->
         {:error, :invalid_json}

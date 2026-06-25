@@ -1,0 +1,1128 @@
+---
+# Reverse-engineered from the Claude Code VS Code extension 2.1.167 bundle.
+#
+# Scope:
+# - This describes the newline-delimited JSON objects exchanged between the
+#   extension's SDK transport and the Claude Code process.
+# - It intentionally targets the VS Code SDK stream path, not the public
+#   `claude -p` contract.
+# - The bundle passes:
+#     --output-format stream-json --verbose --input-format stream-json
+#   and writes/reads one JSON object per line on stdio.
+#
+# Confidence:
+# - "required" and field names here are based on object construction and
+#   dispatch code in /tmp/claude-extension.pretty.js.
+# - Some response payloads are opaque because the extension forwards them
+#   or stores them without validating field-by-field.
+"$schema": https://json-schema.org/draft/2020-12/schema
+"$id": urn:reverse-engineered:claude-vscode-sdk-stream:2.1.167
+title: Claude Code VS Code SDK stream JSONL schema
+type: object
+anyOf:
+- "$ref": "#/$defs/inputToClaude"
+- "$ref": "#/$defs/outputFromClaude"
+"$defs":
+  json:
+    "$comment": Any JSON value.
+    anyOf:
+    - type: 'null'
+    - type: boolean
+    - type: number
+    - type: string
+    - type: array
+      items:
+        "$ref": "#/$defs/json"
+    - type: object
+      additionalProperties:
+        "$ref": "#/$defs/json"
+  uuid:
+    type: string
+    pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+  inputToClaude:
+    "$comment": Messages the extension can write to Claude Code stdin.
+    anyOf:
+    - "$ref": "#/$defs/userInputMessage"
+    - "$ref": "#/$defs/assistantInputMessage"
+    - "$ref": "#/$defs/inputControlRequest"
+    - "$ref": "#/$defs/inputControlResponse"
+    - "$ref": "#/$defs/systemInputMessage"
+  outputFromClaude:
+    "$comment": Messages the extension can read from Claude Code stdout. Some are consumed by the SDK transport; others are yielded to extension/webview code.
+    anyOf:
+    - "$ref": "#/$defs/userOutputMessage"
+    - "$ref": "#/$defs/assistantOutputMessage"
+    - "$ref": "#/$defs/systemOutputMessage"
+    - "$ref": "#/$defs/resultOutputMessage"
+    - "$ref": "#/$defs/outputControlRequest"
+    - "$ref": "#/$defs/outputControlResponse"
+    - "$ref": "#/$defs/outputControlCancelRequest"
+    - "$ref": "#/$defs/keepAliveOutputMessage"
+    - "$ref": "#/$defs/transcriptMirrorOutputMessage"
+  messageEnvelopeBase:
+    type: object
+    properties:
+      uuid:
+        type: string
+        "$comment": Observed on transcript/session messages. Often a UUID, but persisted records are treated as generic strings.
+      session_id:
+        type: string
+      parent_tool_use_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+      timestamp:
+        type: string
+    additionalProperties: true
+  userInputMessage:
+    "$comment": Constructed for string prompts and accepted from async input streams.
+    allOf:
+    - "$ref": "#/$defs/messageEnvelopeBase"
+    - type: object
+      required:
+      - type
+      - session_id
+      - message
+      - parent_tool_use_id
+      properties:
+        type:
+          const: user
+        message:
+          "$ref": "#/$defs/userAnthropicMessage"
+  assistantInputMessage:
+    "$comment": Seen when the extension reconstructs/saves/teleports sessions. It may be replayed through streamInput, but normal live input is user/control traffic.
+    allOf:
+    - "$ref": "#/$defs/messageEnvelopeBase"
+    - type: object
+      required:
+      - type
+      - message
+      properties:
+        type:
+          const: assistant
+        message:
+          "$ref": "#/$defs/assistantAnthropicMessage"
+  systemInputMessage:
+    "$comment": The SDK transport synthesizes this for transcript mirror failures.
+    type: object
+    required:
+    - type
+    - subtype
+    - error
+    properties:
+      type:
+        const: system
+      subtype:
+        const: mirror_error
+      error:
+        type: string
+      key:
+        type: object
+        additionalProperties:
+          "$ref": "#/$defs/json"
+      uuid:
+        type: string
+      session_id:
+        type: string
+    additionalProperties: true
+  userOutputMessage:
+    "$comment": Forwarded/yielded by the SDK transport. Same envelope as user input; output may include uuid/timestamp.
+    allOf:
+    - "$ref": "#/$defs/messageEnvelopeBase"
+    - type: object
+      required:
+      - type
+      - message
+      properties:
+        type:
+          const: user
+        message:
+          "$ref": "#/$defs/userAnthropicMessage"
+  assistantOutputMessage:
+    "$comment": Forwarded/yielded by the SDK transport and consumed by extension code for assistant text.
+    allOf:
+    - "$ref": "#/$defs/messageEnvelopeBase"
+    - type: object
+      required:
+      - type
+      - message
+      properties:
+        type:
+          const: assistant
+        message:
+          "$ref": "#/$defs/assistantAnthropicMessage"
+  systemOutputMessage:
+    "$comment": Most system messages are forwarded. session_state_changed is special-cased only for error tracking; post_turn_summary and task_summary are explicitly forwarded.
+    type: object
+    required:
+    - type
+    - subtype
+    properties:
+      type:
+        const: system
+      subtype:
+        type: string
+        "$comment": Observed/handled values include session_state_changed, post_turn_summary, task_summary, compact_boundary, mirror_error.
+      uuid:
+        type: string
+      session_id:
+        type: string
+    additionalProperties: true
+  userAnthropicMessage:
+    type: object
+    required:
+    - role
+    - content
+    properties:
+      role:
+        const: user
+      content:
+        "$comment": String prompts are encoded as an array with a text block. Tool result content is also accepted in user messages.
+        anyOf:
+        - type: string
+        - type: array
+          items:
+            anyOf:
+            - "$ref": "#/$defs/textContentBlock"
+            - "$ref": "#/$defs/toolResultContentBlock"
+            - "$ref": "#/$defs/imageContentBlock"
+            - "$ref": "#/$defs/audioContentBlock"
+            - "$ref": "#/$defs/resourceContentBlock"
+            - "$ref": "#/$defs/resourceLinkContentBlock"
+            - "$ref": "#/$defs/unknownContentBlock"
+    additionalProperties: true
+  assistantAnthropicMessage:
+    type: object
+    required:
+    - role
+    - content
+    properties:
+      id:
+        type: string
+      role:
+        const: assistant
+      model:
+        type: string
+      stop_reason:
+        anyOf:
+        - type: string
+        - type: 'null'
+      stop_sequence:
+        anyOf:
+        - type: string
+        - type: 'null'
+      usage:
+        type: object
+        additionalProperties:
+          "$ref": "#/$defs/json"
+      content:
+        type: array
+        items:
+          anyOf:
+          - "$ref": "#/$defs/textContentBlock"
+          - "$ref": "#/$defs/toolUseContentBlock"
+          - "$ref": "#/$defs/serverToolUseContentBlock"
+          - "$ref": "#/$defs/mcpToolUseContentBlock"
+          - "$ref": "#/$defs/thinkingContentBlock"
+          - "$ref": "#/$defs/imageContentBlock"
+          - "$ref": "#/$defs/unknownContentBlock"
+    additionalProperties: true
+  textContentBlock:
+    type: object
+    required:
+    - type
+    - text
+    properties:
+      type:
+        const: text
+      text:
+        type: string
+      annotations:
+        "$ref": "#/$defs/json"
+      _meta:
+        type: object
+        additionalProperties:
+          "$ref": "#/$defs/json"
+    additionalProperties: true
+  imageContentBlock:
+    "$comment": MCP schemas in the bundle use data + mimeType. Extension Jupyter tool emits image/png this way.
+    type: object
+    required:
+    - type
+    - data
+    - mimeType
+    properties:
+      type:
+        const: image
+      data:
+        type: string
+      mimeType:
+        type: string
+    additionalProperties: true
+  audioContentBlock:
+    type: object
+    required:
+    - type
+    - data
+    - mimeType
+    properties:
+      type:
+        const: audio
+      data:
+        type: string
+      mimeType:
+        type: string
+    additionalProperties: true
+  toolUseContentBlock:
+    type: object
+    required:
+    - type
+    - id
+    - name
+    - input
+    properties:
+      type:
+        const: tool_use
+      id:
+        type: string
+      name:
+        type: string
+      input:
+        type: object
+        additionalProperties:
+          "$ref": "#/$defs/json"
+      _meta:
+        type: object
+        additionalProperties:
+          "$ref": "#/$defs/json"
+    additionalProperties: true
+  serverToolUseContentBlock:
+    "$comment": Recognized by bundled Anthropic SDK helpers. Exact fields are not consumed by the VS Code transport.
+    type: object
+    required:
+    - type
+    properties:
+      type:
+        const: server_tool_use
+    additionalProperties: true
+  mcpToolUseContentBlock:
+    "$comment": Recognized by bundled Anthropic SDK helpers. Exact fields are not consumed by the VS Code transport.
+    type: object
+    required:
+    - type
+    properties:
+      type:
+        const: mcp_tool_use
+    additionalProperties: true
+  toolResultContentBlock:
+    "$comment": 'Two spellings appear in bundled libraries: stream messages use tool_use_id/is_error; MCP sampling schema uses toolUseId/isError.'
+    type: object
+    required:
+    - type
+    properties:
+      type:
+        const: tool_result
+      tool_use_id:
+        type: string
+      toolUseId:
+        type: string
+      content:
+        anyOf:
+        - type: string
+        - type: array
+          items:
+            anyOf:
+            - "$ref": "#/$defs/textContentBlock"
+            - "$ref": "#/$defs/imageContentBlock"
+            - "$ref": "#/$defs/audioContentBlock"
+            - "$ref": "#/$defs/resourceContentBlock"
+            - "$ref": "#/$defs/resourceLinkContentBlock"
+            - "$ref": "#/$defs/unknownContentBlock"
+      structuredContent:
+        type: object
+        additionalProperties:
+          "$ref": "#/$defs/json"
+      is_error:
+        type: boolean
+      isError:
+        type: boolean
+      _meta:
+        type: object
+        additionalProperties:
+          "$ref": "#/$defs/json"
+    additionalProperties: true
+  thinkingContentBlock:
+    "$comment": Thinking can be enabled by flags. The transport forwards blocks rather than validating them.
+    type: object
+    required:
+    - type
+    properties:
+      type:
+        enum:
+        - thinking
+        - redacted_thinking
+      thinking:
+        type: string
+      text:
+        type: string
+      signature:
+        type: string
+      data:
+        type: string
+    additionalProperties: true
+  resourceContentBlock:
+    type: object
+    required:
+    - type
+    - resource
+    properties:
+      type:
+        const: resource
+      resource:
+        "$ref": "#/$defs/json"
+    additionalProperties: true
+  resourceLinkContentBlock:
+    type: object
+    required:
+    - type
+    properties:
+      type:
+        const: resource_link
+    additionalProperties: true
+  unknownContentBlock:
+    "$comment": Forward-compatibility bucket. The extension often forwards content blocks without schema checks.
+    type: object
+    required:
+    - type
+    properties:
+      type:
+        type: string
+    additionalProperties: true
+  inputControlRequest:
+    "$comment": Extension-originated requests to Claude Code. request_id is generated by the SDK transport.
+    type: object
+    required:
+    - type
+    - request_id
+    - request
+    properties:
+      type:
+        const: control_request
+      request_id:
+        type: string
+      request:
+        "$ref": "#/$defs/inputControlRequestPayload"
+    additionalProperties: true
+  inputControlRequestPayload:
+    anyOf:
+    - "$ref": "#/$defs/initializeRequest"
+    - "$ref": "#/$defs/simpleControlRequest"
+    - "$ref": "#/$defs/setPermissionModeRequest"
+    - "$ref": "#/$defs/setModelRequest"
+    - "$ref": "#/$defs/setMaxThinkingTokensRequest"
+    - "$ref": "#/$defs/applyFlagSettingsRequest"
+    - "$ref": "#/$defs/rewindFilesRequest"
+    - "$ref": "#/$defs/cancelAsyncMessageRequest"
+    - "$ref": "#/$defs/seedReadStateRequest"
+    - "$ref": "#/$defs/remoteControlRequest"
+    - "$ref": "#/$defs/submitFeedbackRequest"
+    - "$ref": "#/$defs/generateSessionTitleRequest"
+    - "$ref": "#/$defs/sideQuestionRequest"
+    - "$ref": "#/$defs/ultrareviewLaunchRequest"
+    - "$ref": "#/$defs/messageRatedRequest"
+    - "$ref": "#/$defs/mcpServerNameRequest"
+    - "$ref": "#/$defs/mcpAuthenticateRequest"
+    - "$ref": "#/$defs/mcpOAuthCallbackUrlRequest"
+    - "$ref": "#/$defs/claudeAuthenticateRequest"
+    - "$ref": "#/$defs/claudeOAuthCallbackRequest"
+    - "$ref": "#/$defs/readFileRequest"
+    - "$ref": "#/$defs/mcpSetServersRequest"
+    - "$ref": "#/$defs/mcpMessageRequest"
+  initializeRequest:
+    type: object
+    required:
+    - subtype
+    properties:
+      subtype:
+        const: initialize
+      hooks:
+        "$comment": Map from hook event name to hook registrations.
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            type: object
+            properties:
+              matcher:
+                type: string
+              hookCallbackIds:
+                type: array
+                items:
+                  type: string
+              timeout:
+                type: number
+            additionalProperties: true
+      sdkMcpServers:
+        type: array
+        items:
+          type: string
+      jsonSchema:
+        "$ref": "#/$defs/json"
+      systemPrompt:
+        type: array
+        items:
+          type: string
+      appendSystemPrompt:
+        type: string
+      planModeInstructions:
+        type: string
+      appendSubagentSystemPrompt:
+        type: string
+      toolAliases:
+        "$ref": "#/$defs/json"
+      excludeDynamicSections:
+        type: boolean
+      agents:
+        "$ref": "#/$defs/json"
+      title:
+        type: string
+      skills:
+        type: array
+        items:
+          type: string
+      webSearchIsolationExemptMcpServers:
+        type: array
+        items:
+          type: string
+      promptSuggestions:
+        "$ref": "#/$defs/json"
+      agentProgressSummaries:
+        "$ref": "#/$defs/json"
+      forwardSubagentText:
+        type: boolean
+    additionalProperties: true
+  simpleControlRequest:
+    type: object
+    required:
+    - subtype
+    properties:
+      subtype:
+        enum:
+        - interrupt
+        - get_settings
+        - claude_oauth_wait_for_completion
+        - mcp_status
+        - get_context_usage
+        - reload_plugins
+        - reload_skills
+        - channel_enable
+    additionalProperties: true
+  setPermissionModeRequest:
+    type: object
+    required:
+    - subtype
+    - mode
+    properties:
+      subtype:
+        const: set_permission_mode
+      mode:
+        enum:
+        - acceptEdits
+        - auto
+        - bypassPermissions
+        - default
+        - dontAsk
+        - plan
+    additionalProperties: true
+  setModelRequest:
+    type: object
+    required:
+    - subtype
+    - model
+    properties:
+      subtype:
+        const: set_model
+      model:
+        type: string
+    additionalProperties: true
+  setMaxThinkingTokensRequest:
+    type: object
+    required:
+    - subtype
+    - max_thinking_tokens
+    properties:
+      subtype:
+        const: set_max_thinking_tokens
+      max_thinking_tokens:
+        type: number
+    additionalProperties: true
+  applyFlagSettingsRequest:
+    type: object
+    required:
+    - subtype
+    - settings
+    properties:
+      subtype:
+        const: apply_flag_settings
+      settings:
+        "$ref": "#/$defs/json"
+    additionalProperties: true
+  rewindFilesRequest:
+    type: object
+    required:
+    - subtype
+    - user_message_id
+    properties:
+      subtype:
+        const: rewind_files
+      user_message_id:
+        type: string
+      dry_run:
+        type: boolean
+    additionalProperties: true
+  cancelAsyncMessageRequest:
+    type: object
+    required:
+    - subtype
+    - message_uuid
+    properties:
+      subtype:
+        const: cancel_async_message
+      message_uuid:
+        type: string
+    additionalProperties: true
+  seedReadStateRequest:
+    type: object
+    required:
+    - subtype
+    - path
+    - mtime
+    properties:
+      subtype:
+        const: seed_read_state
+      path:
+        type: string
+      mtime:
+        type: number
+    additionalProperties: true
+  remoteControlRequest:
+    type: object
+    required:
+    - subtype
+    - enabled
+    properties:
+      subtype:
+        const: remote_control
+      enabled:
+        type: boolean
+      name:
+        type: string
+    additionalProperties: true
+  submitFeedbackRequest:
+    type: object
+    required:
+    - subtype
+    - description
+    properties:
+      subtype:
+        const: submit_feedback
+      description:
+        type: string
+      surface:
+        type: string
+    additionalProperties: true
+  generateSessionTitleRequest:
+    type: object
+    required:
+    - subtype
+    - description
+    properties:
+      subtype:
+        const: generate_session_title
+      description:
+        type: string
+      persist:
+        type: boolean
+    additionalProperties: true
+  sideQuestionRequest:
+    type: object
+    required:
+    - subtype
+    - question
+    properties:
+      subtype:
+        const: side_question
+      question:
+        type: string
+    additionalProperties: true
+  ultrareviewLaunchRequest:
+    type: object
+    required:
+    - subtype
+    - args
+    properties:
+      subtype:
+        const: ultrareview_launch
+      args:
+        "$ref": "#/$defs/json"
+      confirm:
+        type: boolean
+    additionalProperties: true
+  messageRatedRequest:
+    type: object
+    required:
+    - subtype
+    - messageUuid
+    - sentiment
+    - surface
+    properties:
+      subtype:
+        const: message_rated
+      messageUuid:
+        type: string
+      sentiment:
+        type: string
+      surface:
+        type: string
+      cleared:
+        type: boolean
+    additionalProperties: true
+  mcpServerNameRequest:
+    type: object
+    required:
+    - subtype
+    - serverName
+    properties:
+      subtype:
+        enum:
+        - mcp_reconnect
+        - mcp_toggle
+        - mcp_clear_auth
+      serverName:
+        type: string
+      enabled:
+        type: boolean
+    additionalProperties: true
+  mcpAuthenticateRequest:
+    type: object
+    required:
+    - subtype
+    - serverName
+    - redirectUri
+    properties:
+      subtype:
+        const: mcp_authenticate
+      serverName:
+        type: string
+      redirectUri:
+        type: string
+    additionalProperties: true
+  mcpOAuthCallbackUrlRequest:
+    type: object
+    required:
+    - subtype
+    - serverName
+    - callbackUrl
+    properties:
+      subtype:
+        const: mcp_oauth_callback_url
+      serverName:
+        type: string
+      callbackUrl:
+        type: string
+    additionalProperties: true
+  claudeAuthenticateRequest:
+    type: object
+    required:
+    - subtype
+    - loginWithClaudeAi
+    properties:
+      subtype:
+        const: claude_authenticate
+      loginWithClaudeAi:
+        type: boolean
+    additionalProperties: true
+  claudeOAuthCallbackRequest:
+    type: object
+    required:
+    - subtype
+    - authorizationCode
+    - state
+    properties:
+      subtype:
+        const: claude_oauth_callback
+      authorizationCode:
+        type: string
+      state:
+        type: string
+    additionalProperties: true
+  readFileRequest:
+    type: object
+    required:
+    - subtype
+    - path
+    properties:
+      subtype:
+        const: read_file
+      path:
+        type: string
+      max_bytes:
+        type: number
+      encoding:
+        type: string
+    additionalProperties: true
+  mcpSetServersRequest:
+    type: object
+    required:
+    - subtype
+    - servers
+    properties:
+      subtype:
+        const: mcp_set_servers
+      servers:
+        type: object
+        additionalProperties:
+          "$ref": "#/$defs/json"
+    additionalProperties: true
+  mcpMessageRequest:
+    "$comment": Used by SDK MCP server bridge. message is JSON-RPC-ish and forwarded to the SDK MCP transport.
+    type: object
+    required:
+    - subtype
+    - server_name
+    - message
+    properties:
+      subtype:
+        const: mcp_message
+      server_name:
+        type: string
+      message:
+        "$ref": "#/$defs/jsonRpcMessage"
+    additionalProperties: true
+  inputControlResponse:
+    "$comment": Extension response to Claude-originated control_request.
+    type: object
+    required:
+    - type
+    - response
+    properties:
+      type:
+        const: control_response
+      response:
+        anyOf:
+        - "$ref": "#/$defs/controlSuccessResponse"
+        - "$ref": "#/$defs/controlErrorResponse"
+    additionalProperties: true
+  controlSuccessResponse:
+    type: object
+    required:
+    - subtype
+    - request_id
+    - response
+    properties:
+      subtype:
+        const: success
+      request_id:
+        type: string
+      response:
+        "$ref": "#/$defs/json"
+      pending_permission_requests:
+        type: array
+        items:
+          "$ref": "#/$defs/outputControlRequest"
+    additionalProperties: true
+  controlErrorResponse:
+    type: object
+    required:
+    - subtype
+    - request_id
+    - error
+    properties:
+      subtype:
+        const: error
+      request_id:
+        type: string
+      error:
+        type: string
+      pending_permission_requests:
+        type: array
+        items:
+          "$ref": "#/$defs/outputControlRequest"
+    additionalProperties: true
+  outputControlResponse:
+    "$comment": Claude Code response to extension-originated control_request.
+    type: object
+    required:
+    - type
+    - response
+    properties:
+      type:
+        const: control_response
+      response:
+        anyOf:
+        - "$ref": "#/$defs/controlSuccessResponse"
+        - "$ref": "#/$defs/controlErrorResponse"
+    additionalProperties: true
+  outputControlRequest:
+    "$comment": Claude Code asks the extension/SDK to do something, usually permission, hook, MCP, OAuth, or user dialog work.
+    type: object
+    required:
+    - type
+    - request_id
+    - request
+    properties:
+      type:
+        const: control_request
+      request_id:
+        type: string
+      request:
+        "$ref": "#/$defs/outputControlRequestPayload"
+    additionalProperties: true
+  outputControlRequestPayload:
+    anyOf:
+    - "$ref": "#/$defs/canUseToolRequest"
+    - "$ref": "#/$defs/hookCallbackRequest"
+    - "$ref": "#/$defs/mcpMessageRequest"
+    - "$ref": "#/$defs/elicitationRequest"
+    - "$ref": "#/$defs/requestUserDialogRequest"
+    - "$ref": "#/$defs/oauthTokenRefreshRequest"
+    - "$ref": "#/$defs/hostAuthTokenRefreshRequest"
+  canUseToolRequest:
+    type: object
+    required:
+    - subtype
+    - tool_name
+    - input
+    properties:
+      subtype:
+        const: can_use_tool
+      tool_name:
+        type: string
+      input:
+        "$ref": "#/$defs/json"
+      permission_suggestions:
+        "$ref": "#/$defs/json"
+      blocked_path:
+        type: string
+      decision_reason:
+        type: string
+      title:
+        type: string
+      display_name:
+        type: string
+      description:
+        type: string
+      tool_use_id:
+        type: string
+      agent_id:
+        type: string
+    additionalProperties: true
+  hookCallbackRequest:
+    type: object
+    required:
+    - subtype
+    - callback_id
+    - input
+    properties:
+      subtype:
+        const: hook_callback
+      callback_id:
+        type: string
+      input:
+        "$ref": "#/$defs/json"
+      tool_use_id:
+        type: string
+    additionalProperties: true
+  elicitationRequest:
+    type: object
+    required:
+    - subtype
+    - mcp_server_name
+    - message
+    properties:
+      subtype:
+        const: elicitation
+      mcp_server_name:
+        type: string
+      message:
+        type: string
+      mode:
+        type: string
+      url:
+        type: string
+      elicitation_id:
+        type: string
+      requested_schema:
+        "$ref": "#/$defs/json"
+      title:
+        type: string
+      display_name:
+        type: string
+      description:
+        type: string
+    additionalProperties: true
+  requestUserDialogRequest:
+    type: object
+    required:
+    - subtype
+    - dialog_kind
+    - payload
+    properties:
+      subtype:
+        const: request_user_dialog
+      dialog_kind:
+        type: string
+      payload:
+        "$ref": "#/$defs/json"
+      tool_use_id:
+        type: string
+    additionalProperties: true
+  oauthTokenRefreshRequest:
+    type: object
+    required:
+    - subtype
+    properties:
+      subtype:
+        const: oauth_token_refresh
+    additionalProperties: true
+  hostAuthTokenRefreshRequest:
+    type: object
+    required:
+    - subtype
+    properties:
+      subtype:
+        const: host_auth_token_refresh
+    additionalProperties: true
+  outputControlCancelRequest:
+    "$comment": Claude Code can cancel an outstanding control_request by id.
+    type: object
+    required:
+    - type
+    - request_id
+    properties:
+      type:
+        const: control_cancel_request
+      request_id:
+        type: string
+    additionalProperties: true
+  keepAliveOutputMessage:
+    "$comment": Consumed by the SDK transport and not yielded.
+    type: object
+    required:
+    - type
+    properties:
+      type:
+        const: keep_alive
+    additionalProperties: true
+  transcriptMirrorOutputMessage:
+    "$comment": Consumed by sessionStore mirror support and not yielded directly.
+    type: object
+    required:
+    - type
+    - filePath
+    - entries
+    properties:
+      type:
+        const: transcript_mirror
+      filePath:
+        type: string
+      entries:
+        type: array
+        items:
+          "$ref": "#/$defs/transcriptEntry"
+    additionalProperties: true
+  transcriptEntry:
+    "$comment": Persisted transcript entries include user, assistant, progress, system, attachment, and metadata records.
+    type: object
+    required:
+    - type
+    properties:
+      type:
+        enum:
+        - user
+        - assistant
+        - progress
+        - system
+        - attachment
+        - summary
+        - custom-title
+        - ai-title
+        - teleported-from
+        - teleport-skipped-branch
+        - file-history-snapshot
+      uuid:
+        type: string
+      sessionId:
+        type: string
+      parentUuid:
+        anyOf:
+        - type: string
+        - type: 'null'
+      message:
+        "$ref": "#/$defs/json"
+      timestamp:
+        type: string
+    additionalProperties: true
+  resultOutputMessage:
+    "$comment": A final/turn result. The transport uses is_error/subtype/result/errors for error replacement and first-result handling; other fields are forwarded.
+    type: object
+    required:
+    - type
+    properties:
+      type:
+        const: result
+      subtype:
+        type: string
+      is_error:
+        type: boolean
+      result:
+        type: string
+      errors:
+        type: array
+        items:
+          type: string
+      session_id:
+        type: string
+      uuid:
+        type: string
+      total_cost_usd:
+        type: number
+      duration_ms:
+        type: number
+      duration_api_ms:
+        type: number
+      num_turns:
+        type: number
+      usage:
+        type: object
+        additionalProperties:
+          "$ref": "#/$defs/json"
+    additionalProperties: true
+  jsonRpcMessage:
+    "$comment": Loose JSON-RPC 2.0 shape used for MCP bridge messages.
+    type: object
+    properties:
+      jsonrpc:
+        const: '2.0'
+      id:
+        anyOf:
+        - type: string
+        - type: number
+        - type: 'null'
+      method:
+        type: string
+      params:
+        "$ref": "#/$defs/json"
+      result:
+        "$ref": "#/$defs/json"
+      error:
+        type: object
+        properties:
+          code:
+            type: number
+          message:
+            type: string
+          data:
+            "$ref": "#/$defs/json"
+        additionalProperties: true
+    additionalProperties: true

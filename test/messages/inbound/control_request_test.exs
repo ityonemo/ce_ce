@@ -3,128 +3,101 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
 
   import CeCe.Test.RoundTrip
 
-  alias CeCe.Message
-  alias CeCe.Payload.Inbound.ControlInitialize
-  alias CeCe.Payload.Inbound.ControlInterrupt
-  alias CeCe.Payload.Inbound.ControlCanUseTool
-  alias CeCe.Payload.Inbound.ControlSetModel
-  alias CeCe.Payload.Inbound.ControlMcpStatus
+  alias CeCe.Payload.ControlRequest
 
   describe "round-trip" do
-    test "controlRequest/initialize" do
+    test "control_request/initialize" do
       json = ~s|{
-        "type": "controlRequest",
-        "subtype": "initialize",
+        "type": "control_request",
+        "request_id": "req_initialize",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
-        "cwd": "/home/user",
-        "systemMessage": "Be concise",
-        "model": "claude-opus-4-5",
-        "permissionMode": "default"
+        "request": {
+          "subtype": "initialize",
+          "hooks": null,
+          "sdkMcpServers": ["mcp-one"],
+          "jsonSchema": {"type": "object"},
+          "systemPrompt": ["Be concise"],
+          "appendSystemPrompt": null,
+          "planModeInstructions": null,
+          "appendSubagentSystemPrompt": null,
+          "toolAliases": null,
+          "excludeDynamicSections": null,
+          "agents": null,
+          "title": "Session title",
+          "skills": ["Read"],
+          "webSearchIsolationExemptMcpServers": null,
+          "promptSuggestions": null,
+          "agentProgressSummaries": null,
+          "forwardSubagentText": false
+        }
       }|
 
-      assert_round_trip(json, %Message{
-        type: :controlRequest,
+      assert_round_trip(json, %ControlRequest{
+        request_id: "req_initialize",
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
-        payload: %ControlInitialize{
-          subtype: :initialize,
-          cwd: "/home/user",
-          systemMessage: "Be concise",
-          model: "claude-opus-4-5",
-          permissionMode: "default"
+        request: %CeCe.Payload.ControlRequest.Initialize{
+          hooks: nil,
+          sdkMcpServers: ["mcp-one"],
+          jsonSchema: %{"type" => "object"},
+          systemPrompt: ["Be concise"],
+          appendSystemPrompt: nil,
+          planModeInstructions: nil,
+          appendSubagentSystemPrompt: nil,
+          toolAliases: nil,
+          excludeDynamicSections: nil,
+          agents: nil,
+          title: "Session title",
+          skills: ["Read"],
+          webSearchIsolationExemptMcpServers: nil,
+          promptSuggestions: nil,
+          agentProgressSummaries: nil,
+          forwardSubagentText: false
         }
       })
     end
 
-    test "controlRequest/interrupt" do
+    test "control_request/can_use_tool" do
       json = ~s|{
-        "type": "controlRequest",
-        "subtype": "interrupt",
+        "type": "control_request",
+        "request_id": "req_can_use_tool",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
-        "reason": "User cancelled"
-      }|
-
-      assert_round_trip(json, %Message{
-        type: :controlRequest,
-        session_id: "abc-123",
-        uuid: "def-456",
-        parent_tool_use_id: nil,
-        payload: %ControlInterrupt{
-          subtype: :interrupt,
-          reason: "User cancelled"
+        "request": {
+          "subtype": "can_use_tool",
+          "tool_name": "Bash",
+          "input": {"command": "ls"},
+          "permission_suggestions": null,
+          "blocked_path": null,
+          "decision_reason": null,
+          "title": null,
+          "display_name": null,
+          "description": null,
+          "tool_use_id": "toolu_123",
+          "agent_id": null
         }
-      })
-    end
-
-    test "controlRequest/canUseTool" do
-      json = ~s|{
-        "type": "controlRequest",
-        "subtype": "canUseTool",
-        "session_id": "abc-123",
-        "uuid": "def-456",
-        "parent_tool_use_id": null,
-        "toolUseId": "toolu_123",
-        "allowed": true,
-        "reason": null
       }|
 
-      assert_round_trip(json, %Message{
-        type: :controlRequest,
+      assert_round_trip(json, %ControlRequest{
+        request_id: "req_can_use_tool",
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
-        payload: %ControlCanUseTool{
-          subtype: :canUseTool,
-          toolUseId: "toolu_123",
-          allowed: true,
-          reason: nil
-        }
-      })
-    end
-
-    test "controlRequest/setModel" do
-      json = ~s|{
-        "type": "controlRequest",
-        "subtype": "setModel",
-        "session_id": "abc-123",
-        "uuid": "def-456",
-        "parent_tool_use_id": null,
-        "model": "claude-sonnet-4"
-      }|
-
-      assert_round_trip(json, %Message{
-        type: :controlRequest,
-        session_id: "abc-123",
-        uuid: "def-456",
-        parent_tool_use_id: nil,
-        payload: %ControlSetModel{
-          subtype: :setModel,
-          model: "claude-sonnet-4"
-        }
-      })
-    end
-
-    test "controlRequest/mcpStatus" do
-      json = ~s|{
-        "type": "controlRequest",
-        "subtype": "mcpStatus",
-        "session_id": "abc-123",
-        "uuid": "def-456",
-        "parent_tool_use_id": null
-      }|
-
-      assert_round_trip(json, %Message{
-        type: :controlRequest,
-        session_id: "abc-123",
-        uuid: "def-456",
-        parent_tool_use_id: nil,
-        payload: %ControlMcpStatus{
-          subtype: :mcpStatus
+        request: %CeCe.Payload.ControlRequest.CanUseTool{
+          tool_name: "Bash",
+          input: %{"command" => "ls"},
+          permission_suggestions: nil,
+          blocked_path: nil,
+          decision_reason: nil,
+          title: nil,
+          display_name: nil,
+          description: nil,
+          tool_use_id: "toolu_123",
+          agent_id: nil
         }
       })
     end

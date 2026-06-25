@@ -3,32 +3,50 @@ defmodule CeCe.Messages.Outbound.ControlResponseTest do
 
   import CeCe.Test.RoundTrip
 
-  alias CeCe.Message
-  alias CeCe.Payload.Outbound.ControlResponse
+  alias CeCe.Payload.ControlResponse
 
   describe "round-trip" do
-    test "controlResponse" do
+    test "control_response" do
       json = ~s|{
-        "type": "controlResponse",
+        "type": "control_response",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
-        "requestId": "req_123",
-        "success": true,
-        "data": {"status": "ok"},
-        "error": null
+        "response": {
+          "subtype": "success",
+          "request_id": "req_123",
+          "response": {"status": "ok"},
+          "pending_permission_requests": [
+            {
+              "type": "control_request",
+              "request_id": "req_pending",
+              "session_id": "abc-123",
+              "uuid": "def-456",
+              "parent_tool_use_id": null,
+              "request": {
+                "subtype": "get_settings"
+              }
+            }
+          ]
+        }
       }|
 
-      assert_round_trip(json, %Message{
-        type: :controlResponse,
+      assert_round_trip(json, %ControlResponse{
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
-        payload: %ControlResponse{
-          requestId: "req_123",
-          success: true,
-          data: %{"status" => "ok"},
-          error: nil
+        response: %CeCe.Payload.ControlResponse.Success{
+          request_id: "req_123",
+          response: %{"status" => "ok"},
+          pending_permission_requests: [
+            %CeCe.Payload.ControlRequest{
+              request_id: "req_pending",
+              session_id: "abc-123",
+              uuid: "def-456",
+              parent_tool_use_id: nil,
+              request: %CeCe.Payload.ControlRequest.SimpleControl{subtype: :get_settings}
+            }
+          ]
         }
       })
     end

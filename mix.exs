@@ -25,7 +25,9 @@ defmodule CeCe.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:proton_stream, "~> 1.8.2"}
+      {:protoss, "~> 1.1.0"},
+      {:proton_stream, "~> 1.8.2"},
+      {:telemetry, "~> 1.0"}
     ]
   end
 end

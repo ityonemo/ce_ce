@@ -3,29 +3,23 @@ defmodule CeCe.Messages.Inbound.ControlCancelRequestTest do
 
   import CeCe.Test.RoundTrip
 
-  alias CeCe.Message
-  alias CeCe.Payload.Inbound.ControlCancelRequest
+  alias CeCe.Payload.ControlCancelRequest
 
   describe "round-trip" do
-    test "controlCancelRequest" do
+    test "control_cancel_request" do
       json = ~s|{
-        "type": "controlCancelRequest",
+        "type": "control_cancel_request",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
-        "subtype": "cancelRequest",
-        "requestId": "req_123"
+        "request_id": "req_123"
       }|
 
-      assert_round_trip(json, %Message{
-        type: :controlCancelRequest,
+      assert_round_trip(json, %ControlCancelRequest{
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
-        payload: %ControlCancelRequest{
-          subtype: :cancelRequest,
-          requestId: "req_123"
-        }
+        request_id: "req_123"
       })
     end
   end
