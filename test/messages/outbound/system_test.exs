@@ -22,12 +22,12 @@ defmodule CeCe.Messages.Outbound.SystemTest do
         "model": "claude-opus-4-5",
         "tools": ["Bash", "Read"],
         "agents": [{"name": "Explore", "type": null, "description": "Explorer agent"}],
-        "slashCommands": [{"name": "compact", "description": null, "args": []}],
-        "mcpServers": [{"name": "playwright", "status": "connected", "error": null}],
+        "slash_commands": [{"name": "compact", "description": null, "args": []}],
+        "mcp_servers": [{"name": "playwright", "status": "connected", "error": null}],
         "permissionMode": "default",
         "apiKeySource": "env",
-        "claudeCodeVersion": "1.0.0",
-        "outputStyle": "default",
+        "claude_code_version": "1.0.0",
+        "output_style": "default",
         "skills": [],
         "plugins": []
       }|
@@ -43,12 +43,12 @@ defmodule CeCe.Messages.Outbound.SystemTest do
           model: "claude-opus-4-5",
           tools: ["Bash", "Read"],
           agents: [%AgentInfo{name: "Explore", type: nil, description: "Explorer agent"}],
-          slashCommands: [%SlashCommand{name: "compact", description: nil, args: []}],
-          mcpServers: [%McpServerStatus{name: "playwright", status: "connected", error: nil}],
+          slash_commands: [%SlashCommand{name: "compact", description: nil, args: []}],
+          mcp_servers: [%McpServerStatus{name: "playwright", status: "connected", error: nil}],
           permissionMode: "default",
           apiKeySource: "env",
-          claudeCodeVersion: "1.0.0",
-          outputStyle: "default",
+          claude_code_version: "1.0.0",
+          output_style: "default",
           skills: [],
           plugins: []
         }
