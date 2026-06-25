@@ -224,6 +224,15 @@ defmodule CeCe do
   defp parse_json(json_string) do
     case JSON.decode(json_string) do
       {:ok, map} when is_map(map) ->
+        # Emit telemetry with the raw decoded map BEFORE parsing, so every
+        # inbound message is observable even if CeCe.Message.parse/1 raises
+        # (e.g. an unknown type or a key the schema renamed).
+        :telemetry.execute(
+          [:ce_ce, :message, :received],
+          %{system_time: System.system_time()},
+          %{raw: map, json: json_string}
+        )
+
         {:ok, CeCe.Message.parse(map)}
 
       {:error, _} ->
