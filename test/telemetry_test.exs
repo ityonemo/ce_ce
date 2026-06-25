@@ -32,13 +32,15 @@ defmodule CeCe.TelemetryTest do
     assert metadata.json == json
   end
 
-  test "emits the raw map even when the message type is unknown (parse would crash)" do
-    # An unknown type makes CeCe.Payload.parse/1 raise; the telemetry event must
-    # still have fired with the raw payload (it is emitted before parse).
+  test "emits the raw map even when the message type is unknown" do
+    # An unknown type is routed to CeCe.Payload.Unknown (no crash); the
+    # telemetry event still fires with the raw payload, emitted before parse.
     json = ~s|{"type":"some_future_type","session_id":"s","uuid":"u"}|
     state = %CeCe{state: self(), module: CeCe, buffer: ""}
 
-    catch_error(CeCe.handle_stdout(json <> "\n", state))
+    ExUnit.CaptureLog.capture_log(fn ->
+      CeCe.handle_stdout(json <> "\n", state)
+    end)
 
     assert_receive {:telemetry, @event, _measurements, metadata}
     assert metadata.raw["type"] == "some_future_type"

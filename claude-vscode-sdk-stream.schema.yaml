@@ -59,6 +59,7 @@ anyOf:
     - "$ref": "#/$defs/outputControlCancelRequest"
     - "$ref": "#/$defs/keepAliveOutputMessage"
     - "$ref": "#/$defs/transcriptMirrorOutputMessage"
+    - "$ref": "#/$defs/rateLimitEventOutputMessage"
   messageEnvelopeBase:
     type: object
     properties:
@@ -1013,6 +1014,41 @@ anyOf:
     properties:
       type:
         const: keep_alive
+    additionalProperties: true
+  rateLimitEventOutputMessage:
+    "$comment": >-
+      Not part of the documented SDK transport union; the extension's transport
+      drops it and only the webview consumes it (rate-limit warning UI). Fields
+      reverse-engineered from the webview's rate-limit formatter in extension
+      2.1.193 and live 2.1.193 payloads. Inner keys are camelCase as emitted;
+      the producer may send additional keys (preserved as additionalProperties).
+    type: object
+    required:
+    - type
+    - rate_limit_info
+    properties:
+      type:
+        const: rate_limit_event
+      rate_limit_info:
+        type: object
+        required:
+        - status
+        properties:
+          status:
+            type: string
+            "$comment": e.g. "allowed", "rejected".
+          rateLimitType:
+            type: string
+            "$comment": e.g. "seven_day_overage_included".
+          resetsAt:
+            type: number
+            "$comment": Unix seconds; the webview multiplies by 1000.
+          utilization:
+            type: number
+            "$comment": Fraction 0..1; the webview renders floor(utilization*100)%.
+          overageInUse:
+            type: boolean
+        additionalProperties: true
     additionalProperties: true
   transcriptMirrorOutputMessage:
     "$comment": Consumed by sessionStore mirror support and not yielded directly.
