@@ -9,7 +9,7 @@ defmodule CeCe.Messages.Outbound.StreamlinedTextTest do
   describe "round-trip" do
     test "streamlinedText" do
       json = ~s|{
-        "type": "streamlinedText",
+        "type": "streamlined_text",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
@@ -17,7 +17,7 @@ defmodule CeCe.Messages.Outbound.StreamlinedTextTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :streamlinedText,
+        type: :streamlined_text,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,

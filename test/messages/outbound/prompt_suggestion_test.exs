@@ -9,7 +9,7 @@ defmodule CeCe.Messages.Outbound.PromptSuggestionTest do
   describe "round-trip" do
     test "promptSuggestion" do
       json = ~s|{
-        "type": "promptSuggestion",
+        "type": "prompt_suggestion",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
@@ -17,7 +17,7 @@ defmodule CeCe.Messages.Outbound.PromptSuggestionTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :promptSuggestion,
+        type: :prompt_suggestion,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,

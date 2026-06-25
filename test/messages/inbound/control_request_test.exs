@@ -13,7 +13,7 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
   describe "round-trip" do
     test "controlRequest/initialize" do
       json = ~s|{
-        "type": "controlRequest",
+        "type": "control_request",
         "subtype": "initialize",
         "session_id": "abc-123",
         "uuid": "def-456",
@@ -25,7 +25,7 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :controlRequest,
+        type: :control_request,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
@@ -41,7 +41,7 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
 
     test "controlRequest/interrupt" do
       json = ~s|{
-        "type": "controlRequest",
+        "type": "control_request",
         "subtype": "interrupt",
         "session_id": "abc-123",
         "uuid": "def-456",
@@ -50,7 +50,7 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :controlRequest,
+        type: :control_request,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
@@ -63,7 +63,7 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
 
     test "controlRequest/canUseTool" do
       json = ~s|{
-        "type": "controlRequest",
+        "type": "control_request",
         "subtype": "canUseTool",
         "session_id": "abc-123",
         "uuid": "def-456",
@@ -74,7 +74,7 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :controlRequest,
+        type: :control_request,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
@@ -89,7 +89,7 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
 
     test "controlRequest/setModel" do
       json = ~s|{
-        "type": "controlRequest",
+        "type": "control_request",
         "subtype": "setModel",
         "session_id": "abc-123",
         "uuid": "def-456",
@@ -98,7 +98,7 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :controlRequest,
+        type: :control_request,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
@@ -111,7 +111,7 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
 
     test "controlRequest/mcpStatus" do
       json = ~s|{
-        "type": "controlRequest",
+        "type": "control_request",
         "subtype": "mcpStatus",
         "session_id": "abc-123",
         "uuid": "def-456",
@@ -119,7 +119,7 @@ defmodule CeCe.Messages.Inbound.ControlRequestTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :controlRequest,
+        type: :control_request,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,

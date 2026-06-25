@@ -9,7 +9,7 @@ defmodule CeCe.Messages.Inbound.UpdateEnvironmentVariablesTest do
   describe "round-trip" do
     test "updateEnvironmentVariables" do
       json = ~s|{
-        "type": "updateEnvironmentVariables",
+        "type": "update_environment_variables",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
@@ -17,12 +17,12 @@ defmodule CeCe.Messages.Inbound.UpdateEnvironmentVariablesTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :updateEnvironmentVariables,
+        type: :update_environment_variables,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,
         payload: %UpdateEnvironmentVariables{
-          type: :updateEnvironmentVariables,
+          type: :update_environment_variables,
           variables: %{"PATH" => "/usr/bin", "HOME" => "/home/user"}
         }
       })

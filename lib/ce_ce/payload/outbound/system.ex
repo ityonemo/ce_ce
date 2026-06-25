@@ -41,19 +41,19 @@ defmodule CeCe.Payload.Outbound.System do
   @subtype_map %{
     "init" => SystemInit,
     "status" => SystemStatus,
-    "compactBoundary" => SystemCompactBoundary,
-    "apiRetry" => SystemApiRetry,
-    "localCommandOutput" => SystemLocalCommandOutput,
-    "hookStarted" => SystemHookStarted,
-    "hookProgress" => SystemHookProgress,
-    "hookResponse" => SystemHookResponse,
-    "filesPersisted" => SystemFilesPersisted,
-    "taskNotification" => SystemTaskNotification,
-    "taskStarted" => SystemTaskStarted,
-    "taskProgress" => SystemTaskProgress,
-    "sessionStateChanged" => SystemSessionStateChanged,
-    "postTurnSummary" => SystemPostTurnSummary,
-    "elicitationComplete" => SystemElicitationComplete
+    "compact_boundary" => SystemCompactBoundary,
+    "api_retry" => SystemApiRetry,
+    "local_command_output" => SystemLocalCommandOutput,
+    "hook_started" => SystemHookStarted,
+    "hook_progress" => SystemHookProgress,
+    "hook_response" => SystemHookResponse,
+    "files_persisted" => SystemFilesPersisted,
+    "task_notification" => SystemTaskNotification,
+    "task_started" => SystemTaskStarted,
+    "task_progress" => SystemTaskProgress,
+    "session_state_changed" => SystemSessionStateChanged,
+    "post_turn_summary" => SystemPostTurnSummary,
+    "elicitation_complete" => SystemElicitationComplete
   }
 
   @doc """

@@ -9,7 +9,7 @@ defmodule CeCe.Messages.Outbound.AuthStatusTest do
   describe "round-trip" do
     test "authStatus" do
       json = ~s|{
-        "type": "authStatus",
+        "type": "auth_status",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
@@ -19,7 +19,7 @@ defmodule CeCe.Messages.Outbound.AuthStatusTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :authStatus,
+        type: :auth_status,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,

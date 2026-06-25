@@ -9,7 +9,7 @@ defmodule CeCe.Messages.Outbound.ToolUseSummaryTest do
   describe "round-trip" do
     test "toolUseSummary" do
       json = ~s|{
-        "type": "toolUseSummary",
+        "type": "tool_use_summary",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
@@ -23,7 +23,7 @@ defmodule CeCe.Messages.Outbound.ToolUseSummaryTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :toolUseSummary,
+        type: :tool_use_summary,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,

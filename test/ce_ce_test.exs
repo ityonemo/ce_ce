@@ -13,12 +13,12 @@ defmodule CeCeTest do
         "model" => "claude-opus-4-5",
         "tools" => ["Bash", "Read"],
         "agents" => ["Explore"],
-        "slashCommands" => ["compact"],
-        "mcpServers" => [%{"name" => "playwright", "status" => "connected"}],
+        "slash_commands" => ["compact"],
+        "mcp_servers" => [%{"name" => "playwright", "status" => "connected"}],
         "permissionMode" => "default",
         "apiKeySource" => "env",
-        "claudeCodeVersion" => "1.0.0",
-        "outputStyle" => "default",
+        "claude_code_version" => "1.0.0",
+        "output_style" => "default",
         "skills" => [],
         "plugins" => []
       }

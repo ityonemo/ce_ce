@@ -9,7 +9,7 @@ defmodule CeCe.Messages.Outbound.ToolProgressTest do
   describe "round-trip" do
     test "toolProgress" do
       json = ~s|{
-        "type": "toolProgress",
+        "type": "tool_progress",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
@@ -21,7 +21,7 @@ defmodule CeCe.Messages.Outbound.ToolProgressTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :toolProgress,
+        type: :tool_progress,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,

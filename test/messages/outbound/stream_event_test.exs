@@ -9,7 +9,7 @@ defmodule CeCe.Messages.Outbound.StreamEventTest do
   describe "round-trip" do
     test "streamEvent" do
       json = ~s|{
-        "type": "streamEvent",
+        "type": "stream_event",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
@@ -18,7 +18,7 @@ defmodule CeCe.Messages.Outbound.StreamEventTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :streamEvent,
+        type: :stream_event,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,

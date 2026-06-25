@@ -9,7 +9,7 @@ defmodule CeCe.Messages.Outbound.KeepAliveTest do
   describe "round-trip" do
     test "keepAlive" do
       json = ~s|{
-        "type": "keepAlive",
+        "type": "keep_alive",
         "session_id": "abc-123",
         "uuid": "def-456",
         "parent_tool_use_id": null,
@@ -17,7 +17,7 @@ defmodule CeCe.Messages.Outbound.KeepAliveTest do
       }|
 
       assert_round_trip(json, %Message{
-        type: :keepAlive,
+        type: :keep_alive,
         session_id: "abc-123",
         uuid: "def-456",
         parent_tool_use_id: nil,

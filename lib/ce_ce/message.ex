@@ -101,9 +101,10 @@ defmodule CeCe.Message do
     }
   end
 
-  @types ~w[system assistant user result streamEvent toolProgress authStatus toolUseSummary
-             rateLimitEvent promptSuggestion controlRequest controlResponse controlCancelRequest
-             keepAlive streamlinedText streamlinedToolUseSummary updateEnvironmentVariables]a
+  @types ~w[system assistant user result stream_event tool_progress auth_status tool_use_summary
+             rate_limit_event prompt_suggestion control_request control_response
+             control_cancel_request keep_alive streamlined_text streamlined_tool_use_summary
+             update_environment_variables]a
 
   @type_map Map.new(@types, &{"#{&1}", &1})
 
@@ -118,19 +119,19 @@ defmodule CeCe.Message do
     "assistant" => Assistant,
     "user" => User,
     "result" => Result,
-    "streamEvent" => StreamEvent,
-    "toolProgress" => ToolProgress,
-    "authStatus" => AuthStatus,
-    "toolUseSummary" => ToolUseSummary,
-    "rateLimitEvent" => RateLimitEvent,
-    "promptSuggestion" => PromptSuggestion,
-    "controlRequest" => ControlRequest,
-    "controlResponse" => ControlResponse,
-    "controlCancelRequest" => ControlCancelRequest,
-    "keepAlive" => KeepAlive,
-    "streamlinedText" => StreamlinedText,
-    "streamlinedToolUseSummary" => StreamlinedToolUseSummary,
-    "updateEnvironmentVariables" => UpdateEnvironmentVariables
+    "stream_event" => StreamEvent,
+    "tool_progress" => ToolProgress,
+    "auth_status" => AuthStatus,
+    "tool_use_summary" => ToolUseSummary,
+    "rate_limit_event" => RateLimitEvent,
+    "prompt_suggestion" => PromptSuggestion,
+    "control_request" => ControlRequest,
+    "control_response" => ControlResponse,
+    "control_cancel_request" => ControlCancelRequest,
+    "keep_alive" => KeepAlive,
+    "streamlined_text" => StreamlinedText,
+    "streamlined_tool_use_summary" => StreamlinedToolUseSummary,
+    "update_environment_variables" => UpdateEnvironmentVariables
   }
 
   defp parse_payload!(%{"type" => type} = json) do
