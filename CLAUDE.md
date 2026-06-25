@@ -7,10 +7,10 @@ A GenServer library wrapping the Claude Code CLI using ProtonStream for process 
 ## CLI Invocation
 
 ```bash
-claude --continue --output-format stream-json --input-format stream-json --print --verbose
+claude --continue --output-format stream-json --input-format stream-json --verbose
 ```
 
-**Important**: `--input-format stream-json` is required for interactive/multi-shot sessions. Without it, `--print` mode expects all input upfront and exits.
+**Important**: `--input-format stream-json` is required for interactive/multi-shot sessions; the SDK transport drives the same invocation (no `--print`).
 
 ## JSON Parsing
 
