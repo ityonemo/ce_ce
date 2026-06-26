@@ -21,17 +21,17 @@ defmodule CeCe.AuthTest do
     end
   end
 
-  describe "split_auth_code/1" do
+  describe "_split_auth_code/1" do
     test "splits code#state" do
-      assert CeCe.split_auth_code("the-code#the-state") == {"the-code", "the-state"}
+      assert CeCe._split_auth_code("the-code#the-state") == {"the-code", "the-state"}
     end
 
     test "handles a code with no #state" do
-      assert CeCe.split_auth_code("just-a-code") == {"just-a-code", ""}
+      assert CeCe._split_auth_code("just-a-code") == {"just-a-code", ""}
     end
 
     test "only splits on the first #" do
-      assert CeCe.split_auth_code("code#state#extra") == {"code", "state#extra"}
+      assert CeCe._split_auth_code("code#state#extra") == {"code", "state#extra"}
     end
   end
 

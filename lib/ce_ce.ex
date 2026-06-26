@@ -47,6 +47,11 @@ defmodule CeCe do
   use GenServer
   @behaviour ProtonStream
 
+  alias CeCe.Payload.ControlRequest
+  alias CeCe.Payload.ControlRequest.ClaudeAuthenticate
+  alias CeCe.Payload.ControlRequest.ClaudeOAuthCallback
+  alias CeCe.Payload.User
+
   # Behaviour callbacks for user modules.
 
   @callback handle_message(message :: CeCe.Payload.t(), state :: term()) ::
@@ -56,7 +61,7 @@ defmodule CeCe do
 
   # 1. BOILERPLATE & INITIALIZATION
 
-  defstruct [:state, module: __MODULE__, buffer: "", auth: :unknown]
+  defstruct [:state, :session_id, module: __MODULE__, buffer: "", auth: :unknown]
 
   @type auth :: :logged_in | :logged_out | :unknown
 
@@ -64,7 +69,8 @@ defmodule CeCe do
           buffer: String.t(),
           state: term(),
           module: module(),
-          auth: auth()
+          auth: auth(),
+          session_id: String.t() | nil
         }
 
   @spec start_link(pid(), keyword()) :: GenServer.on_start()
@@ -145,16 +151,38 @@ defmodule CeCe do
 
   @spec send_prompt(GenServer.server(), String.t()) :: :ok
   def send_prompt(server, prompt) do
-    json =
-      JSON.encode!(%{
-        type: "user",
-        message: %{
-          role: "user",
-          content: prompt
-        }
-      })
+    inject(server, User.new(prompt))
+  end
 
-    ProtonStream.command(server, [json, "\n"])
+  @typedoc "Something injectable onto the CLI's stdin: a raw line, a control request struct, or a JSON-encodable map."
+  @type content :: iodata() | struct() | map()
+
+  @doc """
+  Inject `content` onto the wrapped CLI's stdin.
+
+  - **binary / iodata** — written verbatim, as a fast path. The caller is
+    responsible for JSONL framing, i.e. for appending the trailing `"\\n"`.
+  - **`CeCe.Payload.ControlRequest` subtype struct** (e.g. `%ClaudeAuthenticate{}`)
+    — routed through the GenServer so it can be wrapped in a `ControlRequest`
+    envelope tagged with the current `session_id`, then JSON-encoded + newline
+    framed.
+  - **any other map / struct** — JSON-encoded and newline framed.
+  """
+  @spec inject(GenServer.server(), content()) :: :ok
+  def inject(server, content) when is_binary(content) or is_list(content) do
+    ProtonStream.command(server, content)
+  end
+
+  def inject(server, %_{} = content) do
+    if updated_content = with_session_id(content) do
+      ProtonStream.command(server, [JSON.encode_to_iodata!(updated_content), "\n"])
+    else
+      GenServer.call(server, {:inject, content})
+    end
+  end
+
+  def inject(server, content) do
+    ProtonStream.command(server, [JSON.encode_to_iodata!(content), "\n"])
   end
 
   @doc """
@@ -175,11 +203,7 @@ defmodule CeCe do
   `code#state` string to `auth_response/2`.
   """
   @spec request_auth(GenServer.server()) :: :ok
-  def request_auth(server) do
-    control_request(server, %CeCe.Payload.ControlRequest.ClaudeAuthenticate{
-      loginWithClaudeAi: true
-    })
-  end
+  def request_auth(server), do: control_request(server, %ClaudeAuthenticate{})
 
   @doc """
   Complete an interactive Claude login.
@@ -191,9 +215,9 @@ defmodule CeCe do
   """
   @spec auth_response(GenServer.server(), String.t()) :: :ok
   def auth_response(server, pasted) when is_binary(pasted) do
-    {code, state} = split_auth_code(pasted)
+    {code, state} = _split_auth_code(pasted)
 
-    control_request(server, %CeCe.Payload.ControlRequest.ClaudeOAuthCallback{
+    control_request(server, %ClaudeOAuthCallback{
       authorizationCode: code,
       state: state
     })
@@ -202,26 +226,19 @@ defmodule CeCe do
   @doc false
   # Splits the pasted `code#state` string into `{code, state}`. Public for
   # testing.
-  def split_auth_code(pasted) do
+  def _split_auth_code(pasted) do
     case String.split(pasted, "#", parts: 2) do
       [code, state] -> {code, state}
       [code] -> {code, ""}
     end
   end
 
-  # Inject a control_request envelope onto the CLI's stdin (fire-and-forget).
+  # Wrap a control-request subtype in a ControlRequest envelope (with a fresh
+  # request_id) and inject it. inject/2 stamps the envelope's session_id (pdict
+  # fast path, or the GenServer's stored session_id).
   defp control_request(server, request_struct) do
-    json =
-      JSON.encode!(%{
-        type: "control_request",
-        request_id: gen_request_id(),
-        request: request_struct
-      })
-
-    ProtonStream.command(server, [json, "\n"])
+    inject(server, ControlRequest.new(request_struct))
   end
-
-  defp gen_request_id, do: "req_" <> Base.encode16(:crypto.strong_rand_bytes(8), case: :lower)
 
   # Simple mode callback: send message to handler PID
   def handle_message(message, handler) when is_pid(handler) do
@@ -229,7 +246,30 @@ defmodule CeCe do
     {:noreply, handler}
   end
 
-  # 3. PROTONSTREAM CALLBACKS
+  # 3. Helper functions
+
+  @doc """
+  if a process is going to be sending a lot of messages, it might make sense to
+  cache the session id locally in the process.  This function does this via the
+  pcoress dictionary, and works with `inject/2` as a fast path.  If a process uses
+  this as a fast path, it MUST use this function to update on every message receipt.
+
+  The function is designed to be piped.
+  """
+  def save_session_id(%_{session_id: session_id} = struct) do
+    Process.put(:cece_session_id, session_id)
+    struct
+  end
+
+  def save_session_id(fallback), do: fallback
+
+  defp with_session_id(struct) when is_map_key(struct, :session_id) do
+    if session_id = Process.get(:cece_session_id) do
+      %{struct | session_id: session_id}
+    end
+  end
+
+  # 4. PROTONSTREAM CALLBACKS
 
   @impl ProtonStream
   def handle_stdout(data, state) do
@@ -337,6 +377,8 @@ defmodule CeCe do
   end
 
   defp deliver_message(message, state) do
+    state = capture_session_id(message, state)
+
     case state.module.handle_message(message, state.state) do
       {:noreply, new_inner_state} ->
         %{state | state: new_inner_state}
@@ -349,6 +391,15 @@ defmodule CeCe do
     end
   end
 
+  # Remember the most recent session_id seen on an inbound message, so outbound
+  # control requests / messages can be stamped with it (see inject/2).
+  defp capture_session_id(message, state) do
+    case Map.get(message, :session_id) do
+      nil -> state
+      session_id -> %{state | session_id: session_id}
+    end
+  end
+
   # 5. ROUTER
 
   # CeCe-owned call: report the auth state detected at startup. Matched before
@@ -356,6 +407,15 @@ defmodule CeCe do
   @impl GenServer
   def handle_call(:cece_logged_in?, _from, state) do
     {:reply, state.auth == :logged_in, state}
+  end
+
+  def handle_call({:inject, struct}, _from, state) do
+    struct
+    |> Map.replace(:session_id, state.session_id)
+    |> JSON.encode_to_iodata!()
+    |> then(&ProtonStream.command(self(), [&1, "\n"]))
+
+    {:reply, :ok, state}
   end
 
   # Forward GenServer calls to user module
@@ -404,8 +464,8 @@ defmodule CeCe do
   end
 
   @impl GenServer
-  def handle_info(msg, state) when state.module != __MODULE__ do
-    if function_exported?(state.module, :handle_info, 2) do
+  def handle_info(msg, state) do
+    if state.module != __MODULE__ and function_exported?(state.module, :handle_info, 2) do
       case state.module.handle_info(msg, state.state) do
         {:noreply, new_inner_state} ->
           {:noreply, %{state | state: new_inner_state}}

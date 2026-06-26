@@ -80,6 +80,20 @@ defmodule CeCe.Payload.ControlRequest do
   @derive JSON.Encoder
   defstruct @required_fields ++ [:session_id, :uuid, :parent_tool_use_id, type: :control_request]
 
+  @doc """
+  Builds an outbound control request envelope for `request_payload` (one of the
+  `request()` subtype structs), with a freshly generated v4 `request_id`
+  (matching the format the Claude Code CLI uses). `session_id` is left nil here
+  and stamped at injection time.
+  """
+  @spec new(request()) :: t()
+  def new(request_payload) do
+    %__MODULE__{
+      request_id: UUID.uuid4(),
+      request: request_payload
+    }
+  end
+
   @request_modules %{
     "initialize" => Initialize,
     "interrupt" => SimpleControl,
