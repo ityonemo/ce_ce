@@ -383,9 +383,10 @@ defmodule CeCe do
   # Remember the most recent session_id seen on an inbound message, so outbound
   # control requests / messages can be stamped with it (see inject/2).
   defp capture_session_id(message, state) do
-    case Map.get(message, :session_id) do
-      nil -> state
-      session_id -> %{state | session_id: session_id}
+    if session_id = Map.get(message, :session_id) do
+      %{state | session_id: session_id}
+    else
+      state
     end
   end
 
