@@ -27,7 +27,8 @@ defmodule CeCe.MixProject do
     [
       {:protoss, "~> 1.1.0"},
       {:proton_stream, "~> 1.8.2"},
-      {:telemetry, "~> 1.0"}
+      {:telemetry, "~> 1.0"},
+      {:elixir_uuid, "~> 1.2"}
     ]
   end
 end
