@@ -56,12 +56,15 @@ defmodule CeCe do
 
   # 1. BOILERPLATE & INITIALIZATION
 
-  defstruct [:state, module: __MODULE__, buffer: ""]
+  defstruct [:state, module: __MODULE__, buffer: "", auth: :unknown]
+
+  @type auth :: :logged_in | :logged_out | :unknown
 
   @type state :: %__MODULE__{
           buffer: String.t(),
           state: term(),
-          module: module()
+          module: module(),
+          auth: auth()
         }
 
   @spec start_link(pid(), keyword()) :: GenServer.on_start()
@@ -95,19 +98,46 @@ defmodule CeCe do
           | {:stop, reason :: term()}
   @spec init({nil, pid}) :: {:ok, state()}
   def init({module, init_arg}) do
+    auth = detect_auth()
+
     if module do
       case module.init(init_arg) do
         {:ok, inner_state} ->
-          {:ok, %__MODULE__{module: module, state: inner_state}}
+          {:ok, %__MODULE__{module: module, state: inner_state, auth: auth}}
 
         {:ok, inner_state, extra} ->
-          {:ok, %__MODULE__{module: module, state: inner_state}, extra}
+          {:ok, %__MODULE__{module: module, state: inner_state, auth: auth}, extra}
 
         other ->
           other
       end
     else
-      {:ok, %__MODULE__{state: init_arg}}
+      {:ok, %__MODULE__{state: init_arg, auth: auth}}
+    end
+  end
+
+  # Detect whether the `claude` CLI is authenticated by running its own
+  # out-of-band status command. The stream-json `system/init` message cannot
+  # distinguish logged-in from logged-out (it reports apiKeySource "none" in
+  # both), so this subprocess is the only reliable signal. It reads the same
+  # CLAUDE_CONFIG_DIR the session uses (inherited from the BEAM env).
+  defp detect_auth do
+    case System.cmd("claude", ["auth", "status", "--json"], stderr_to_stdout: true) do
+      {output, 0} -> parse_auth_status(output)
+      _ -> :unknown
+    end
+  rescue
+    _ -> :unknown
+  end
+
+  @doc false
+  # Maps the JSON from `claude auth status --json` to an auth atom. Public for
+  # testing as a pure function.
+  def parse_auth_status(json) do
+    case JSON.decode(json) do
+      {:ok, %{"loggedIn" => true}} -> :logged_in
+      {:ok, %{"loggedIn" => false}} -> :logged_out
+      _ -> :unknown
     end
   end
 
@@ -126,6 +156,72 @@ defmodule CeCe do
 
     ProtonStream.command(server, [json, "\n"])
   end
+
+  @doc """
+  Whether the wrapped `claude` CLI was authenticated at startup.
+
+  Reflects the auth state detected in `init/1`; returns `:unknown` if the check
+  could not run.
+  """
+  @spec logged_in?(GenServer.server()) :: boolean()
+  def logged_in?(server), do: GenServer.call(server, :cece_logged_in?)
+
+  @doc """
+  Begin an interactive Claude login over the live session.
+
+  Injects a `claude_authenticate` control request. Fire-and-forget: the CLI's
+  `control_response` (carrying `manualUrl`) arrives via the normal message path
+  (`handle_message`). Open `manualUrl`, authorize, and pass the resulting
+  `code#state` string to `auth_response/2`.
+  """
+  @spec request_auth(GenServer.server()) :: :ok
+  def request_auth(server) do
+    control_request(server, %CeCe.Payload.ControlRequest.ClaudeAuthenticate{
+      loginWithClaudeAi: true
+    })
+  end
+
+  @doc """
+  Complete an interactive Claude login.
+
+  `pasted` is the `code#state` string shown after authorizing `manualUrl`
+  (the part before `#` is the authorization code, after is the state). Injects a
+  `claude_oauth_callback` control request; the success `control_response` (with
+  account info) arrives via the normal message path.
+  """
+  @spec auth_response(GenServer.server(), String.t()) :: :ok
+  def auth_response(server, pasted) when is_binary(pasted) do
+    {code, state} = split_auth_code(pasted)
+
+    control_request(server, %CeCe.Payload.ControlRequest.ClaudeOAuthCallback{
+      authorizationCode: code,
+      state: state
+    })
+  end
+
+  @doc false
+  # Splits the pasted `code#state` string into `{code, state}`. Public for
+  # testing.
+  def split_auth_code(pasted) do
+    case String.split(pasted, "#", parts: 2) do
+      [code, state] -> {code, state}
+      [code] -> {code, ""}
+    end
+  end
+
+  # Inject a control_request envelope onto the CLI's stdin (fire-and-forget).
+  defp control_request(server, request_struct) do
+    json =
+      JSON.encode!(%{
+        type: "control_request",
+        request_id: gen_request_id(),
+        request: request_struct
+      })
+
+    ProtonStream.command(server, [json, "\n"])
+  end
+
+  defp gen_request_id, do: "req_" <> Base.encode16(:crypto.strong_rand_bytes(8), case: :lower)
 
   # Simple mode callback: send message to handler PID
   def handle_message(message, handler) when is_pid(handler) do
@@ -255,8 +351,14 @@ defmodule CeCe do
 
   # 5. ROUTER
 
-  # Forward GenServer calls to user module
+  # CeCe-owned call: report the auth state detected at startup. Matched before
+  # the user-module forwarding clause so it works in both modes.
   @impl GenServer
+  def handle_call(:cece_logged_in?, _from, state) do
+    {:reply, state.auth == :logged_in, state}
+  end
+
+  # Forward GenServer calls to user module
   def handle_call(msg, from, state) when state.module != __MODULE__ do
     if function_exported?(state.module, :handle_call, 3) do
       case state.module.handle_call(msg, from, state.state) do
