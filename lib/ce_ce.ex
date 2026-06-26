@@ -253,7 +253,16 @@ defmodule CeCe do
 
   def handle_stderr(data, %{module: module} = state) do
     if function_exported?(module, :handle_stderr, 2) do
-      forward(state, module.handle_stderr(data, state.state))
+      case module.handle_stderr(data, state.state) do
+        {:noreply, new_inner_state} ->
+          {:noreply, %{state | state: new_inner_state}}
+
+        {:noreply, new_inner_state, extra} ->
+          {:noreply, %{state | state: new_inner_state}, extra}
+
+        {:stop, reason, new_inner_state} ->
+          {:stop, reason, %{state | state: new_inner_state}}
+      end
     else
       {:noreply, state}
     end
@@ -380,21 +389,6 @@ defmodule CeCe do
     end
   end
 
-  # Wrap a user-module callback result, threading the inner state back into the
-  # CeCe state. Used by the forwarding clauses below.
-  defp forward(state, {:reply, reply, inner}), do: {:reply, reply, %{state | state: inner}}
-
-  defp forward(state, {:reply, reply, inner, extra}),
-    do: {:reply, reply, %{state | state: inner}, extra}
-
-  defp forward(state, {:noreply, inner}), do: {:noreply, %{state | state: inner}}
-  defp forward(state, {:noreply, inner, extra}), do: {:noreply, %{state | state: inner}, extra}
-
-  defp forward(state, {:stop, reason, reply, inner}),
-    do: {:stop, reason, reply, %{state | state: inner}}
-
-  defp forward(state, {:stop, reason, inner}), do: {:stop, reason, %{state | state: inner}}
-
   # ==========================================================================
   # 5. ROUTER
   # ==========================================================================
@@ -409,7 +403,25 @@ defmodule CeCe do
 
   def handle_call(msg, from, state) when state.module != __MODULE__ do
     if function_exported?(state.module, :handle_call, 3) do
-      forward(state, state.module.handle_call(msg, from, state.state))
+      case state.module.handle_call(msg, from, state.state) do
+        {:reply, reply, new_inner_state} ->
+          {:reply, reply, %{state | state: new_inner_state}}
+
+        {:reply, reply, new_inner_state, extra} ->
+          {:reply, reply, %{state | state: new_inner_state}, extra}
+
+        {:noreply, new_inner_state} ->
+          {:noreply, %{state | state: new_inner_state}}
+
+        {:noreply, new_inner_state, extra} ->
+          {:noreply, %{state | state: new_inner_state}, extra}
+
+        {:stop, reason, reply, new_inner_state} ->
+          {:stop, reason, reply, %{state | state: new_inner_state}}
+
+        {:stop, reason, new_inner_state} ->
+          {:stop, reason, %{state | state: new_inner_state}}
+      end
     else
       {:reply, {:error, :not_implemented}, state}
     end
@@ -418,7 +430,16 @@ defmodule CeCe do
   @impl GenServer
   def handle_cast(msg, state) when state.module != __MODULE__ do
     if function_exported?(state.module, :handle_cast, 2) do
-      forward(state, state.module.handle_cast(msg, state.state))
+      case state.module.handle_cast(msg, state.state) do
+        {:noreply, new_inner_state} ->
+          {:noreply, %{state | state: new_inner_state}}
+
+        {:noreply, new_inner_state, extra} ->
+          {:noreply, %{state | state: new_inner_state}, extra}
+
+        {:stop, reason, new_inner_state} ->
+          {:stop, reason, %{state | state: new_inner_state}}
+      end
     else
       {:noreply, state}
     end
@@ -427,7 +448,16 @@ defmodule CeCe do
   @impl GenServer
   def handle_info(msg, state) do
     if state.module != __MODULE__ and function_exported?(state.module, :handle_info, 2) do
-      forward(state, state.module.handle_info(msg, state.state))
+      case state.module.handle_info(msg, state.state) do
+        {:noreply, new_inner_state} ->
+          {:noreply, %{state | state: new_inner_state}}
+
+        {:noreply, new_inner_state, extra} ->
+          {:noreply, %{state | state: new_inner_state}, extra}
+
+        {:stop, reason, new_inner_state} ->
+          {:stop, reason, %{state | state: new_inner_state}}
+      end
     else
       {:noreply, state}
     end
@@ -436,7 +466,16 @@ defmodule CeCe do
   @impl GenServer
   def handle_continue(continue_arg, state) when state.module != __MODULE__ do
     if function_exported?(state.module, :handle_continue, 2) do
-      forward(state, state.module.handle_continue(continue_arg, state.state))
+      case state.module.handle_continue(continue_arg, state.state) do
+        {:noreply, new_inner_state} ->
+          {:noreply, %{state | state: new_inner_state}}
+
+        {:noreply, new_inner_state, extra} ->
+          {:noreply, %{state | state: new_inner_state}, extra}
+
+        {:stop, reason, new_inner_state} ->
+          {:stop, reason, %{state | state: new_inner_state}}
+      end
     else
       {:noreply, state}
     end
