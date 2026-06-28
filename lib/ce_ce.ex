@@ -213,6 +213,25 @@ defmodule CeCe do
   end
 
   @doc """
+  Clear the stored Claude credential by running `claude auth logout` against the
+  `CLAUDE_CONFIG_DIR`.
+
+  This is an out-of-band subprocess (it does not touch the live session); the
+  caller is responsible for stopping any running session first, since a live
+  session holds its auth token in memory. The `server` argument is accepted for
+  API symmetry with the other auth functions but is unused.
+  """
+  @spec logout(GenServer.server()) :: :ok | {:error, String.t()}
+  def logout(_server \\ nil) do
+    case System.cmd("claude", ["auth", "logout"], stderr_to_stdout: true) do
+      {_out, 0} -> :ok
+      {out, _} -> {:error, String.trim(out)}
+    end
+  rescue
+    e -> {:error, Exception.message(e)}
+  end
+
+  @doc """
   Cache the current session id in the calling process's dictionary.
 
   A process that sends many messages can call this on every inbound message to

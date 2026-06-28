@@ -4,6 +4,13 @@ defmodule CeCe.AuthTest do
   alias CeCe.Payload.ControlRequest.ClaudeAuthenticate
   alias CeCe.Payload.ControlRequest.ClaudeOAuthCallback
 
+  describe "logout/1" do
+    test "is exported with arity 1 (and a default arg)" do
+      assert function_exported?(CeCe, :logout, 1)
+      assert function_exported?(CeCe, :logout, 0)
+    end
+  end
+
   describe "parse_auth_status/1" do
     test "maps loggedIn:true to :logged_in" do
       json = ~s|{"loggedIn":true,"authMethod":"claude.ai","email":"a@b.com"}|
