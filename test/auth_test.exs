@@ -4,10 +4,58 @@ defmodule CeCe.AuthTest do
   alias CeCe.Payload.ControlRequest.ClaudeAuthenticate
   alias CeCe.Payload.ControlRequest.ClaudeOAuthCallback
 
+  alias CeCe.Payload.Assistant
+  alias CeCe.Payload.ControlResponse
+  alias CeCe.Payload.ControlResponse.Success
+  alias CeCe.Payload.KeepAlive
+
   describe "logout/1" do
     test "is exported with arity 1 (and a default arg)" do
       assert function_exported?(CeCe, :logout, 1)
       assert function_exported?(CeCe, :logout, 0)
+    end
+  end
+
+  describe "track_auth/2" do
+    setup do
+      %{state: %CeCe{state: nil, module: CeCe, auth: :unknown}}
+    end
+
+    test "a login-success control response (account key) sets :logged_in", %{state: state} do
+      msg = %ControlResponse{response: %Success{response: %{"account" => %{"email" => "a@b"}}}}
+      assert CeCe.track_auth(msg, state).auth == :logged_in
+    end
+
+    test "an assistant authentication_failed sets :logged_out", %{state: state} do
+      msg = %Assistant{error: "authentication_failed", message: %Assistant.Message{content: []}}
+      assert CeCe.track_auth(msg, %{state | auth: :logged_in}).auth == :logged_out
+    end
+
+    test "the claude_authenticate response (manualUrl, no account) leaves auth unchanged",
+         %{state: state} do
+      msg = %ControlResponse{response: %Success{response: %{"manualUrl" => "https://x"}}}
+      assert CeCe.track_auth(msg, state).auth == :unknown
+    end
+
+    test "an unrelated message leaves auth unchanged", %{state: state} do
+      assert CeCe.track_auth(%KeepAlive{}, %{state | auth: :logged_in}).auth == :logged_in
+    end
+  end
+
+  describe "Assistant.parse/1 error field" do
+    test "keeps the top-level error" do
+      json = %{
+        "type" => "assistant",
+        "error" => "authentication_failed",
+        "message" => %{"role" => "assistant", "content" => []}
+      }
+
+      assert Assistant.parse(json).error == "authentication_failed"
+    end
+
+    test "error is nil when absent" do
+      json = %{"type" => "assistant", "message" => %{"role" => "assistant", "content" => []}}
+      assert Assistant.parse(json).error == nil
     end
   end
 

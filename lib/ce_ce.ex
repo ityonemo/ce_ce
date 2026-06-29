@@ -47,9 +47,11 @@ defmodule CeCe do
   use GenServer
   @behaviour ProtonStream
 
+  alias CeCe.Payload.Assistant
   alias CeCe.Payload.ControlRequest
   alias CeCe.Payload.ControlRequest.ClaudeAuthenticate
   alias CeCe.Payload.ControlRequest.ClaudeOAuthCallback
+  alias CeCe.Payload.ControlResponse
   alias CeCe.Payload.User
 
   # Behaviour callbacks for user modules.
@@ -385,7 +387,10 @@ defmodule CeCe do
   end
 
   defp deliver_message(message, state) do
-    state = capture_session_id(message, state)
+    state =
+      message
+      |> capture_session_id(state)
+      |> then(&track_auth(message, &1))
 
     case state.module.handle_message(message, state.state) do
       {:noreply, new_inner_state} ->
@@ -408,6 +413,23 @@ defmodule CeCe do
       state
     end
   end
+
+  @doc false
+  # Keep state.auth current from auth transitions observed in the message stream,
+  # so logged_in? stays accurate without re-running `claude auth status`:
+  #   - a login-success control_response (carries an "account" key) => :logged_in
+  #   - an assistant "authentication_failed" error                  => :logged_out
+  # (Logout flips auth back implicitly: Pepper restarts the agent, so init's
+  # detect_auth re-runs logged-out.) Public for testing.
+  def track_auth(%ControlResponse{response: %{response: %{"account" => _}}}, state) do
+    %{state | auth: :logged_in}
+  end
+
+  def track_auth(%Assistant{error: "authentication_failed"}, state) do
+    %{state | auth: :logged_out}
+  end
+
+  def track_auth(_message, state), do: state
 
   # ==========================================================================
   # 5. ROUTER
