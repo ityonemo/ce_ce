@@ -16,6 +16,7 @@ defmodule CeCe.Messages.Outbound.AssistantTest do
         "uuid": "def-456",
         "parent_tool_use_id": null,
         "timestamp": null,
+        "error": null,
         "message": {
           "role": "assistant",
           "model": "claude-opus-4-5",
@@ -62,6 +63,7 @@ defmodule CeCe.Messages.Outbound.AssistantTest do
         "uuid": "def-456",
         "parent_tool_use_id": null,
         "timestamp": null,
+        "error": null,
         "message": {
           "role": "assistant",
           "model": "claude-opus-4-5",
