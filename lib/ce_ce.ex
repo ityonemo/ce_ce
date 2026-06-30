@@ -61,20 +61,26 @@ defmodule CeCe do
               | {:noreply, state :: term(), timeout() | :hibernate | {:continue, term()}}
               | {:stop, reason :: term(), state :: term()}
 
+  @type json :: nil | boolean | number | String.t() | [json] | %{optional(String.t) => json}
+
   # ==========================================================================
   # 1. BOILERPLATE & INITIALIZATION
   # ==========================================================================
 
-  defstruct [:state, :session_id, module: __MODULE__, buffer: "", auth: :unknown]
+  defstruct [:state, :session_id, :on_json_map, :on_json_string, module: __MODULE__, buffer: "", auth: :unknown]
 
   @type auth :: :logged_in | :logged_out | :unknown
+  @type on_json_string :: (String.t() -> :ok)
+  @type on_json_map :: (json -> :ok)
 
   @type state :: %__MODULE__{
           buffer: String.t(),
           state: term(),
           module: module(),
           auth: auth(),
-          session_id: String.t() | nil
+          session_id: String.t() | nil,
+          on_json_map: on_json_map | nil,
+          on_json_string: on_json_string | nil
         }
 
   @spec start_link(pid(), keyword()) :: GenServer.on_start()
@@ -109,20 +115,21 @@ defmodule CeCe do
   @spec init({nil, pid}) :: {:ok, state()}
   def init({module, init_arg}) do
     auth = detect_auth()
+    callbacks = Keyword.take(init_arg, ~w[on_json_map on_json_string]a)
 
     if module do
       case module.init(init_arg) do
         {:ok, inner_state} ->
-          {:ok, %__MODULE__{module: module, state: inner_state, auth: auth}}
+          {:ok, struct!(__MODULE__, [module: module, state: inner_state, auth: auth] ++ callbacks)}
 
         {:ok, inner_state, extra} ->
-          {:ok, %__MODULE__{module: module, state: inner_state, auth: auth}, extra}
+          {:ok, struct!(__MODULE__, [module: module, state: inner_state, auth: auth] ++ callbacks), extra}
 
         other ->
           other
       end
     else
-      {:ok, %__MODULE__{state: init_arg, auth: auth}}
+      {:ok, struct!(__MODULE__, [state: init_arg, auth: auth] ++ callbacks)}
     end
   end
 
@@ -349,12 +356,23 @@ defmodule CeCe do
 
   defp with_session_id(_struct), do: nil
 
+  @spec run_callback(state, :on_json_string, String.t) :: :ok
+  @spec run_callback(state, :on_json_map, json) :: :ok
+  defp run_callback(state, callback, value) do
+    if fun = Map.fetch!(state, callback) do
+      fun.(value)
+    end
+  end
+
   defp process_buffer(buffer, state) do
     case String.split(buffer, "\n", parts: 2) do
       [complete_json, rest] ->
+        run_callback(state, :on_json_string, complete_json)
         new_state =
           case parse_json(complete_json) do
-            {:ok, message} -> deliver_message(message, state)
+            {:ok, message} ->
+              run_callback(state, :on_json_map, message)
+              deliver_message(message, state)
             {:error, _reason} -> state
           end
 
