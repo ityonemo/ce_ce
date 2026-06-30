@@ -70,8 +70,8 @@ defmodule CeCe do
   defstruct [:state, :session_id, :on_json_map, :on_json_string, module: __MODULE__, buffer: "", auth: :unknown]
 
   @type auth :: :logged_in | :logged_out | :unknown
-  @type on_json_map :: (String.t() -> :ok)
-  @type on_json_string :: (json -> :ok)
+  @type on_json_string :: (String.t() -> :ok)
+  @type on_json_map :: (json -> :ok)
 
   @type state :: %__MODULE__{
           buffer: String.t(),
