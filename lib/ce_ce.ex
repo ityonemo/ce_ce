@@ -83,13 +83,21 @@ defmodule CeCe do
               | {:noreply, state :: term(), timeout() | :hibernate | {:continue, term()}}
               | {:stop, reason :: term(), state :: term()}
 
-  @type json :: nil | boolean | number | String.t() | [json] | %{optional(String.t) => json}
+  @type json :: nil | boolean | number | String.t() | [json] | %{optional(String.t()) => json}
 
   # ==========================================================================
   # 1. BOILERPLATE & INITIALIZATION
   # ==========================================================================
 
-  defstruct [:state, :session_id, :on_json_map, :on_json_string, module: __MODULE__, buffer: "", auth: :unknown]
+  defstruct [
+    :state,
+    :session_id,
+    :on_json_map,
+    :on_json_string,
+    module: __MODULE__,
+    buffer: "",
+    auth: :unknown
+  ]
 
   @type auth :: :logged_in | :logged_out | :unknown
   @type on_json_string :: {module, atom, [term]} | (String.t(), term -> :ok)
@@ -109,17 +117,27 @@ defmodule CeCe do
   @spec start_link(module(), term(), keyword()) :: GenServer.on_start()
   def start_link(module \\ nil, handler, opts) do
     cwd = Keyword.get(opts, :cwd, File.cwd!())
-    genserver_opts = Keyword.take(opts, [:name])
+    # `:fake` (a test pid) swaps the real claude subprocess for ProtonStream's
+    # fake transport. Forward it to ProtonStream, and carry it into the handler
+    # so init can skip auth detection (which shells out to `claude`) in fake mode.
+    fake = Keyword.take(opts, [:fake])
+
+    proton_opts = Keyword.merge([cd: cwd], Keyword.take(opts, [:name, :fake]))
 
     ProtonStream.start_link(
       __MODULE__,
       "claude",
       ~w[--continue --output-format stream-json --input-format stream-json --verbose] ++
         system_prompt(opts),
-      {module, handler},
-      [cd: cwd] ++ genserver_opts
+      {module, init_arg(handler, fake)},
+      proton_opts
     )
   end
+
+  # The callback-module `handler` is a keyword list; carry `:fake` into it so
+  # init can skip auth detection. The simple-mode handler is a pid — leave it.
+  defp init_arg(handler, fake) when is_list(handler), do: Keyword.merge(handler, fake)
+  defp init_arg(handler, _fake), do: handler
 
   defp system_prompt(opts) do
     case Keyword.get(opts, :system_prompt) do
@@ -136,16 +154,21 @@ defmodule CeCe do
           | {:stop, reason :: term()}
   @spec init({nil, pid}) :: {:ok, state()}
   def init({module, init_arg}) do
-    auth = detect_auth()
+    # In fake mode there is no real `claude` to query; skip auth detection (which
+    # shells out) and treat the session as logged in.
+    auth = if fake?(init_arg), do: :logged_in, else: detect_auth()
     callbacks = Keyword.take(init_arg, ~w[on_json_map on_json_string]a)
 
     if module do
       case module.init(init_arg) do
         {:ok, inner_state} ->
-          {:ok, struct!(__MODULE__, [module: module, state: inner_state, auth: auth] ++ callbacks)}
+          {:ok,
+           struct!(__MODULE__, [module: module, state: inner_state, auth: auth] ++ callbacks)}
 
         {:ok, inner_state, extra} ->
-          {:ok, struct!(__MODULE__, [module: module, state: inner_state, auth: auth] ++ callbacks), extra}
+          {:ok,
+           struct!(__MODULE__, [module: module, state: inner_state, auth: auth] ++ callbacks),
+           extra}
 
         other ->
           other
@@ -154,6 +177,9 @@ defmodule CeCe do
       {:ok, struct!(__MODULE__, [state: init_arg, auth: auth] ++ callbacks)}
     end
   end
+
+  defp fake?(init_arg) when is_list(init_arg), do: Keyword.has_key?(init_arg, :fake)
+  defp fake?(_init_arg), do: false
 
   # ==========================================================================
   # 2. API + IMPLEMENTATIONS
@@ -378,15 +404,21 @@ defmodule CeCe do
 
   defp with_session_id(_struct), do: nil
 
-  @spec run_callback(state, :on_json_string, String.t) :: :ok
+  @spec run_callback(state, :on_json_string, String.t()) :: :ok
   @spec run_callback(state, :on_json_map, json) :: :ok
   defp run_callback(state, callback, value) do
     case Map.fetch!(state, callback) do
-      nil -> :ok
+      nil ->
+        :ok
+
       {mod, fun, extra_args} ->
         apply(mod, fun, [value, state.state | extra_args])
-      fun when is_function(fun, 2) -> fun.(value, state.state)
-      fun when is_function(fun, 1) -> fun.(value)
+
+      fun when is_function(fun, 2) ->
+        fun.(value, state.state)
+
+      fun when is_function(fun, 1) ->
+        fun.(value)
     end
   end
 
@@ -394,11 +426,14 @@ defmodule CeCe do
     case String.split(buffer, "\n", parts: 2) do
       [complete_json, rest] ->
         run_callback(state, :on_json_string, complete_json)
+
         new_state =
           case parse_json(complete_json, state) do
             {:ok, message} ->
               deliver_message(message, state)
-            {:error, _reason} -> state
+
+            {:error, _reason} ->
+              state
           end
 
         process_buffer(rest, new_state)

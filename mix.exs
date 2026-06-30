@@ -26,7 +26,7 @@ defmodule CeCe.MixProject do
   defp deps do
     [
       {:protoss, "~> 1.1.0"},
-      {:proton_stream, "~> 1.8.2"},
+      {:proton_stream, "~> 1.8.4"},
       {:telemetry, "~> 1.0"},
       {:elixir_uuid, "~> 1.2"}
     ]
