@@ -42,6 +42,28 @@ defmodule CeCe do
   - `:cwd` - Working directory for Claude Code (default: `File.cwd!()`)
   - `:name` - GenServer name registration
   - `:system_prompt` - Optional system prompt passed to Claude CLI
+  - `:on_json_string` - Optional callback fired with each raw JSON line,
+    before it is decoded (see "JSON Callbacks" below)
+  - `:on_json_map` - Optional callback fired with the decoded JSON map,
+    after `JSON.decode/1` but before `CeCe.Payload.parse/1`
+
+  ## JSON Callbacks
+
+  `:on_json_string` and `:on_json_map` tap the inbound stream as it is processed.
+  For every complete newline-delimited line, `:on_json_string` runs first with
+  the raw line; if the line decodes to a JSON object, `:on_json_map` then runs
+  with the decoded map. Their return values are ignored.
+
+  Each accepts three forms:
+
+  - **1-arity function** — called as `fun.(value)`
+  - **2-arity function** — called as `fun.(value, inner_state)`, where
+    `inner_state` is the handler state (the PID in simple mode, or the callback
+    module's state in callback-module mode)
+  - **`{module, function, extra_args}`** — applied as
+    `apply(module, function, [value, inner_state | extra_args])`
+
+      CeCe.start_link(self(), on_json_string: fn line, pid -> send(pid, {:raw, line}) end)
   """
 
   use GenServer
@@ -70,8 +92,8 @@ defmodule CeCe do
   defstruct [:state, :session_id, :on_json_map, :on_json_string, module: __MODULE__, buffer: "", auth: :unknown]
 
   @type auth :: :logged_in | :logged_out | :unknown
-  @type on_json_string :: (String.t() -> :ok)
-  @type on_json_map :: (json -> :ok)
+  @type on_json_string :: {module, atom, [term]} | (String.t(), term -> :ok)
+  @type on_json_map :: {module, atom, [term]} | (json, term -> :ok)
 
   @type state :: %__MODULE__{
           buffer: String.t(),
@@ -359,8 +381,12 @@ defmodule CeCe do
   @spec run_callback(state, :on_json_string, String.t) :: :ok
   @spec run_callback(state, :on_json_map, json) :: :ok
   defp run_callback(state, callback, value) do
-    if fun = Map.fetch!(state, callback) do
-      fun.(value)
+    case Map.fetch!(state, callback) do
+      nil -> :ok
+      {mod, fun, extra_args} ->
+        apply(mod, fun, [value, state.state | extra_args])
+      fun when is_function(fun, 2) -> fun.(value, state.state)
+      fun when is_function(fun, 1) -> fun.(value)
     end
   end
 
@@ -369,9 +395,8 @@ defmodule CeCe do
       [complete_json, rest] ->
         run_callback(state, :on_json_string, complete_json)
         new_state =
-          case parse_json(complete_json) do
+          case parse_json(complete_json, state) do
             {:ok, message} ->
-              run_callback(state, :on_json_map, message)
               deliver_message(message, state)
             {:error, _reason} -> state
           end
@@ -383,11 +408,12 @@ defmodule CeCe do
     end
   end
 
-  defp parse_json(""), do: {:error, :empty}
+  defp parse_json("", _), do: {:error, :empty}
 
-  defp parse_json(json_string) do
+  defp parse_json(json_string, state) do
     case JSON.decode(json_string) do
       {:ok, map} when is_map(map) ->
+        run_callback(state, :on_json_map, map)
         # Emit telemetry with the raw decoded map BEFORE parsing, so every
         # inbound message is observable even if CeCe.Payload.parse/1 raises
         # (e.g. an unknown type or a key the schema renamed).
