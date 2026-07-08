@@ -42,6 +42,10 @@ defmodule CeCe do
   - `:cwd` - Working directory for Claude Code (default: `File.cwd!()`)
   - `:name` - GenServer name registration
   - `:system_prompt` - Optional system prompt passed to Claude CLI
+  - `:permission_prompt` - `:stdio` to delegate tool-permission decisions to the
+    controlling process: the CLI emits a `can_use_tool` control_request over the
+    stream on an "ask" outcome (answer it with a control_response), instead of
+    resolving permissions itself. Omit to let the CLI decide locally.
   - `:on_json_string` - Optional callback fired with each raw JSON line,
     before it is decoded (see "JSON Callbacks" below)
   - `:on_json_map` - Optional callback fired with the decoded JSON map,
@@ -68,6 +72,8 @@ defmodule CeCe do
 
   use GenServer
   @behaviour ProtonStream
+
+  require Logger
 
   alias CeCe.Payload.Assistant
   alias CeCe.Payload.ControlRequest
@@ -127,17 +133,37 @@ defmodule CeCe do
     ProtonStream.start_link(
       __MODULE__,
       "claude",
-      ~w[--continue --output-format stream-json --input-format stream-json --verbose] ++
-        system_prompt(opts),
+      claude_args(opts),
       {module, init_arg(handler, fake)},
       proton_opts
     )
+  end
+
+  @doc false
+  # The argv for the `claude` subprocess. Public for unit testing (the fake
+  # transport only captures the command name, not its args).
+  def claude_args(opts) do
+    ~w[--continue --output-format stream-json --input-format stream-json --verbose] ++
+      permission_prompt(opts) ++
+      system_prompt(opts)
   end
 
   # The callback-module `handler` is a keyword list; carry `:fake` into it so
   # init can skip auth detection. The simple-mode handler is a pid — leave it.
   defp init_arg(handler, fake) when is_list(handler), do: Keyword.merge(handler, fake)
   defp init_arg(handler, _fake), do: handler
+
+  # `permission_prompt: :stdio` makes the CLI delegate tool-permission decisions
+  # to the controlling process: on an "ask" outcome it emits a `can_use_tool`
+  # control_request over the stream (rather than resolving locally), which the
+  # handler answers with a control_response. Without it, the CLI resolves
+  # permissions itself and never asks.
+  defp permission_prompt(opts) do
+    case Keyword.get(opts, :permission_prompt) do
+      :stdio -> ["--permission-prompt-tool", "stdio"]
+      nil -> []
+    end
+  end
 
   defp system_prompt(opts) do
     case Keyword.get(opts, :system_prompt) do
@@ -567,6 +593,15 @@ defmodule CeCe do
   end
 
   @impl GenServer
+  # Transport-level port exits are ours to handle, not the callback module's:
+  # forwarding `{:EXIT, port, _}` to a `use GenServer` handler makes it log an
+  # "unexpected message" warning. The port closing means the wrapped `claude`
+  # process ended — surface that as a warning here instead.
+  def handle_info({:EXIT, port, _reason}, state) when is_port(port) do
+    Logger.warning("claude code process has lost connection")
+    {:noreply, state}
+  end
+
   def handle_info(msg, state) do
     if state.module != __MODULE__ and function_exported?(state.module, :handle_info, 2) do
       case state.module.handle_info(msg, state.state) do
