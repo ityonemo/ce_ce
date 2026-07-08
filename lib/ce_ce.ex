@@ -73,6 +73,8 @@ defmodule CeCe do
   use GenServer
   @behaviour ProtonStream
 
+  require Logger
+
   alias CeCe.Payload.Assistant
   alias CeCe.Payload.ControlRequest
   alias CeCe.Payload.ControlRequest.ClaudeAuthenticate
@@ -591,10 +593,12 @@ defmodule CeCe do
   end
 
   @impl GenServer
-  # Transport-level port exits are ours to absorb, not the callback module's:
-  # forwarding `{:EXIT, port, :normal}` to a `use GenServer` handler makes it log
-  # an "unexpected message" warning. Swallow port EXITs here.
+  # Transport-level port exits are ours to handle, not the callback module's:
+  # forwarding `{:EXIT, port, _}` to a `use GenServer` handler makes it log an
+  # "unexpected message" warning. The port closing means the wrapped `claude`
+  # process ended — surface that as a warning here instead.
   def handle_info({:EXIT, port, _reason}, state) when is_port(port) do
+    Logger.warning("claude code process has lost connection")
     {:noreply, state}
   end
 
