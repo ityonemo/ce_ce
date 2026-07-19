@@ -33,5 +33,16 @@ defmodule CeCe.ClaudeArgsTest do
              Enum.slice(args, arg_index(args, "--system-prompt"), 2)
   end
 
+  test "no model flag by default" do
+    refute "--model" in CeCe.claude_args([])
+  end
+
+  test "model is appended as --model" do
+    args = CeCe.claude_args(model: :sonnet)
+
+    assert ["--model", "sonnet"] ==
+             Enum.slice(args, arg_index(args, "--model"), 2)
+  end
+
   defp arg_index(args, flag), do: Enum.find_index(args, &(&1 == flag))
 end
