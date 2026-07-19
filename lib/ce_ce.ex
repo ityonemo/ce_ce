@@ -42,6 +42,9 @@ defmodule CeCe do
   - `:cwd` - Working directory for Claude Code (default: `File.cwd!()`)
   - `:name` - GenServer name registration
   - `:system_prompt` - Optional system prompt passed to Claude CLI
+  - `:model` - Optional model override (`--model`); atom or string alias
+    (`:opus` / `:sonnet` / `:haiku`) or a full model id. Omit for the account
+    default.
   - `:permission_prompt` - `:stdio` to delegate tool-permission decisions to the
     controlling process: the CLI emits a `can_use_tool` control_request over the
     stream on an "ask" outcome (answer it with a control_response), instead of
@@ -145,7 +148,8 @@ defmodule CeCe do
   def claude_args(opts) do
     ~w[--continue --output-format stream-json --input-format stream-json --verbose] ++
       permission_prompt(opts) ++
-      system_prompt(opts)
+      system_prompt(opts) ++
+      model(opts)
   end
 
   # The callback-module `handler` is a keyword list; carry `:fake` into it so
@@ -170,6 +174,13 @@ defmodule CeCe do
       nil -> []
       prompt -> ["--system-prompt", prompt]
     end
+  end
+
+  # `model: :sonnet` (or "sonnet") overrides the model for this session via the
+  # CLI's `--model` flag. Accepts atom or string aliases (opus/sonnet/haiku) or a
+  # full model id. Without it, the CLI uses the account default.
+  defp model(opts) do
+    List.wrap(if model = Keyword.get(opts, :model), do: ["--model", to_string(model)])
   end
 
   @impl GenServer
