@@ -128,7 +128,9 @@ defmodule CeCe do
     # so init can skip auth detection (which shells out to `claude`) in fake mode.
     fake = Keyword.take(opts, [:fake])
 
-    proton_opts = Keyword.merge([cd: cwd], Keyword.take(opts, [:name, :fake]))
+    # `:env` (a list of `{"KEY", "VALUE"}` binaries) is forwarded to ProtonStream,
+    # which sets it on the `claude` port's OS environment.
+    proton_opts = Keyword.merge([cd: cwd], Keyword.take(opts, [:name, :fake, :env]))
 
     ProtonStream.start_link(
       __MODULE__,
