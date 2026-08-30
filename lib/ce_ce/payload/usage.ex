@@ -20,6 +20,7 @@ defmodule CeCe.Payload.Usage do
           server_tool_use: %{optional(String.t()) => json()} | nil,
           service_tier: String.t() | nil,
           cache_creation: %{optional(String.t()) => json()} | nil,
+          output_tokens_details: %{optional(String.t()) => json()} | nil,
           inference_geo: json() | nil,
           iterations: json() | nil,
           speed: json() | nil
@@ -34,6 +35,7 @@ defmodule CeCe.Payload.Usage do
     :server_tool_use,
     :service_tier,
     :cache_creation,
+    :output_tokens_details,
     :inference_geo,
     :iterations,
     :speed
@@ -41,7 +43,8 @@ defmodule CeCe.Payload.Usage do
 
   @known_keys ~w[
     input_tokens output_tokens cache_creation_input_tokens cache_read_input_tokens
-    server_tool_use service_tier cache_creation inference_geo iterations speed
+    server_tool_use service_tier cache_creation output_tokens_details
+    inference_geo iterations speed
   ]
 
   @spec parse(%{String.t() => json()}) :: t()
@@ -59,6 +62,7 @@ defmodule CeCe.Payload.Usage do
       server_tool_use: Map.get(json, "server_tool_use"),
       service_tier: Map.get(json, "service_tier"),
       cache_creation: Map.get(json, "cache_creation"),
+      output_tokens_details: Map.get(json, "output_tokens_details"),
       inference_geo: Map.get(json, "inference_geo"),
       iterations: Map.get(json, "iterations"),
       speed: Map.get(json, "speed")

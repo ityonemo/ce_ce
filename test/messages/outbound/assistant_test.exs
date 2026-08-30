@@ -35,6 +35,7 @@ defmodule CeCe.Messages.Outbound.AssistantTest do
             "server_tool_use": null,
             "service_tier": null,
             "cache_creation": null,
+            "output_tokens_details": null,
             "inference_geo": null,
             "iterations": null,
             "speed": null
