@@ -3,6 +3,8 @@ defmodule CeCe.Payload.Result do
 
   use CeCe.Payload
 
+  alias CeCe.Payload.Usage
+
   @type json :: CeCe.Payload.json()
 
   @required_fields []
@@ -19,7 +21,7 @@ defmodule CeCe.Payload.Result do
           duration_ms: number() | nil,
           duration_api_ms: number() | nil,
           num_turns: number() | nil,
-          usage: map() | nil
+          usage: Usage.t() | nil
         }
 
   @derive JSON.Encoder
@@ -52,7 +54,10 @@ defmodule CeCe.Payload.Result do
       duration_ms: Map.get(json, "duration_ms"),
       duration_api_ms: Map.get(json, "duration_api_ms"),
       num_turns: Map.get(json, "num_turns"),
-      usage: Map.get(json, "usage")
+      usage: parse_usage(Map.get(json, "usage"))
     }
   end
+
+  defp parse_usage(nil), do: nil
+  defp parse_usage(usage), do: Usage.parse(usage)
 end

@@ -9,6 +9,7 @@ defmodule CeCe.Payload.Assistant.Message do
 
   @required_fields [:content]
 
+  alias CeCe.Payload.Usage
   alias CeCe.Payload.Common.TextContent
   alias CeCe.Payload.Assistant.ToolUseContent
   alias CeCe.Payload.Assistant.ServerToolUseContent
@@ -33,7 +34,7 @@ defmodule CeCe.Payload.Assistant.Message do
           model: String.t() | nil,
           stop_reason: String.t() | nil,
           stop_sequence: String.t() | nil,
-          usage: %{optional(String.t()) => json()} | nil
+          usage: Usage.t() | nil
         }
 
   @derive JSON.Encoder
@@ -55,9 +56,12 @@ defmodule CeCe.Payload.Assistant.Message do
       content: Map.fetch!(json, "content") |> Enum.map(&parse_content_block/1),
       stop_reason: Map.get(json, "stop_reason"),
       stop_sequence: Map.get(json, "stop_sequence"),
-      usage: Map.get(json, "usage")
+      usage: parse_usage(Map.get(json, "usage"))
     }
   end
+
+  defp parse_usage(nil), do: nil
+  defp parse_usage(usage), do: Usage.parse(usage)
 
   defp parse_content_block(%{"type" => "text"} = json), do: TextContent.parse(json)
   defp parse_content_block(%{"type" => "tool_use"} = json), do: ToolUseContent.parse(json)

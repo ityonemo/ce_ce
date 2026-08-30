@@ -7,6 +7,7 @@ defmodule CeCe.Messages.Outbound.AssistantTest do
   alias CeCe.Payload.Assistant.Message
   alias CeCe.Payload.Common.TextContent
   alias CeCe.Payload.Assistant.ToolUseContent
+  alias CeCe.Payload.Usage
 
   describe "round-trip" do
     test "assistant with text content" do
@@ -30,7 +31,13 @@ defmodule CeCe.Messages.Outbound.AssistantTest do
             "input_tokens": 100,
             "output_tokens": 50,
             "cache_creation_input_tokens": null,
-            "cache_read_input_tokens": null
+            "cache_read_input_tokens": null,
+            "server_tool_use": null,
+            "service_tier": null,
+            "cache_creation": null,
+            "inference_geo": null,
+            "iterations": null,
+            "speed": null
           }
         }
       }|
@@ -46,12 +53,7 @@ defmodule CeCe.Messages.Outbound.AssistantTest do
           content: [%TextContent{text: "Hello!"}],
           stop_reason: "end_turn",
           stop_sequence: nil,
-          usage: %{
-            "input_tokens" => 100,
-            "output_tokens" => 50,
-            "cache_creation_input_tokens" => nil,
-            "cache_read_input_tokens" => nil
-          }
+          usage: %Usage{input_tokens: 100, output_tokens: 50}
         }
       })
     end
