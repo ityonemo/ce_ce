@@ -16,6 +16,7 @@ defmodule CeCe.Messages.Outbound.UsageTest do
           "ephemeral_1h_input_tokens" => 0,
           "ephemeral_5m_input_tokens" => 0
         },
+        "output_tokens_details" => %{"thinking_tokens" => 1585},
         "inference_geo" => nil,
         "iterations" => nil,
         "speed" => nil
@@ -29,6 +30,7 @@ defmodule CeCe.Messages.Outbound.UsageTest do
                server_tool_use: %{"web_search_requests" => 0, "web_fetch_requests" => 0},
                service_tier: nil,
                cache_creation: %{"ephemeral_1h_input_tokens" => 0},
+               output_tokens_details: %{"thinking_tokens" => 1585},
                inference_geo: nil,
                iterations: nil,
                speed: nil
@@ -60,6 +62,7 @@ defmodule CeCe.Messages.Outbound.UsageTest do
           "server_tool_use": null,
           "service_tier": "standard",
           "cache_creation": null,
+          "output_tokens_details": null,
           "inference_geo": null,
           "iterations": null,
           "speed": null
