@@ -43,6 +43,10 @@ defmodule CeCe do
   - `:name` - GenServer name registration
   - `:system_prompt` - Optional system prompt passed to Claude CLI
   - `:model` - Optional model override (`--model`); atom or string alias
+  - `:disallowed_tools` - Optional list of tool names to deny
+    (`--disallowed-tools`)
+  - `:settings` - Optional additional settings (`--settings`), as a map;
+    encoded to JSON
     (`:opus` / `:sonnet` / `:haiku`) or a full model id. Omit for the account
     default.
   - `:permission_prompt` - `:stdio` to delegate tool-permission decisions to the
@@ -151,7 +155,9 @@ defmodule CeCe do
     ~w[--continue --output-format stream-json --input-format stream-json --verbose] ++
       permission_prompt(opts) ++
       system_prompt(opts) ++
-      model(opts)
+      model(opts) ++
+      disallowed_tools(opts) ++
+      settings(opts)
   end
 
   # The callback-module `handler` is a keyword list; carry `:fake` into it so
@@ -183,6 +189,32 @@ defmodule CeCe do
   # full model id. Without it, the CLI uses the account default.
   defp model(opts) do
     List.wrap(if model = Keyword.get(opts, :model), do: ["--model", to_string(model)])
+  end
+
+  # `disallowed_tools: ["SendMessage"]` denies those tools for the session.
+  # A list of names rather than a pre-joined string: the caller names the
+  # tools, and how the CLI wants them punctuated is this module's business.
+  # An empty list passes no flag, so a caller can compute the list freely.
+  defp disallowed_tools(opts) do
+    case Keyword.get(opts, :disallowed_tools) do
+      nil -> []
+      [] -> []
+      tools -> ["--disallowed-tools", tools |> List.wrap() |> Enum.join(",")]
+    end
+  end
+
+  # `settings:` loads additional settings for the session, as data.
+  #
+  # Always encoded, never passed through as a string: the CLI reads a
+  # string argument as either a path or as JSON depending on what it
+  # looks like, and a caller handing over settings should not have to
+  # know which reading it got. A map, so that nested objects -- which is
+  # the shape the CLI wants -- encode without special handling.
+  defp settings(opts) do
+    case Keyword.get(opts, :settings) do
+      nil -> []
+      settings when is_map(settings) -> ["--settings", JSON.encode!(settings)]
+    end
   end
 
   @impl GenServer
